@@ -2,12 +2,12 @@
 
 Revised from official implementation of CVPR 2022 paper (**MHFormer**) Multi-Hypothesis Transformer for 3D Human Pose Estimation.
 
-<p align="center"><img src="figure/pipline.jpg" width="100%" alt="" /></p>
-
-> [**MHFormer: Multi-Hypothesis Transformer for 3D Human Pose Estimation**](https://arxiv.org/pdf/2111.12707),            
+> **MHFormer** ([Github Link](https://github.com/Vegetebird/MHFormer)) <br>
+[Multi-Hypothesis Transformer for 3D Human Pose Estimation](https://arxiv.org/pdf/2111.12707),            
 > Wenhao Li, Hong Liu, Hao Tang, Pichao Wang, Luc Van Gool,        
 > *In IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2022*
 
+<p align="center"><img src="figure/pipline.jpg" width="100%" alt="" /></p>
 
 | ![skating](figure/skating.gif)  | ![anime](figure/anime.gif) |
 | ------------- | ------------- |
