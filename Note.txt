@@ -25,11 +25,17 @@ python run.py -d custom -k myvideos -arc 3,3,3,3,3 -c checkpoint --evaluate pret
 ##################   MHFormer 操作指令   ##################
 
 
-1. 模型預測 Run Inference 
+1. 模型預測 Run Inference
+python demo/vis.py --video sample_video.mp4
 
 
 2. 模型訓練 Training
+python main.py --frames 81 --batch_size 256
+(python main.py --frames 351 --batch_size 128)
 
+
+3. 模型評估 Evaluate
+python main.py --test --previous_dir 'checkpoint/pretrained/351' --frames 351
 
 
 
