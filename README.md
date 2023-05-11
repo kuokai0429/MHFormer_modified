@@ -13,10 +13,6 @@ Revised from official implementation of CVPR 2022 paper (**MHFormer**) Multi-Hyp
 | ------------- | ------------- |
 
 
-## Updates
-- 06/27/2022: The pretrained models of 27, 81, 243, and 351 frames are all released!
-- 03/24/2022: Demo and in-the-wild inference code are released! 
-
 ## Installation
 
 - Create a conda environment: ```conda create -n mhformer python=3.9```
@@ -114,6 +110,3 @@ Our code is extended from the following repositories. We thank the authors for r
 - [3d-pose-baseline](https://github.com/una-dinosauria/3d-pose-baseline)
 - [3d_pose_baseline_pytorch](https://github.com/weigq/3d_pose_baseline_pytorch)
 - [StridedTransformer-Pose3D](https://github.com/Vegetebird/StridedTransformer-Pose3D)
-## Licence
-
-This project is licensed under the terms of the MIT license.
