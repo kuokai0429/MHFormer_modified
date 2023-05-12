@@ -1,3 +1,5 @@
+# 2023.0513 @Brian
+
 import sys
 import argparse
 import cv2
@@ -129,9 +131,9 @@ def showimage(ax, img):
 
 def get_pose3D(video_path, output_dir):
     args, _ = argparse.ArgumentParser().parse_known_args()
-    args.layers, args.channel, args.d_hid, args.frames = 3, 512, 1024, 351
+    args.layers, args.channel, args.d_hid, args.frames = 3, 512, 1024, 81
     args.pad = (args.frames - 1) // 2
-    args.previous_dir = 'checkpoint/pretrained/351'
+    args.previous_dir = 'checkpoint/0512_1329_17_81'
     args.n_joints, args.out_joints = 17, 17
 
     ## Reload 
