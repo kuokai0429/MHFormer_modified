@@ -35,7 +35,8 @@ python main.py --frames 81 --batch_size 256
 
 
 3. 模型評估 Evaluate
-python main.py --test --previous_dir 'checkpoint/pretrained/351' --frames 351
+python main.py --test --previous_dir 'checkpoint/0512_1329_17_81' --frames 81
+(python main.py --test --previous_dir 'checkpoint/pretrained/351' --frames 351)
 
 
 
