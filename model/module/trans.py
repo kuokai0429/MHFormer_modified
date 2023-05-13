@@ -230,7 +230,7 @@ class Transformer(nn.Module):
         self.blocks = nn.ModuleList([
             MixerBlock(
                 embed_dim,
-                embed_dim,
+                length,
                 mlp_ratio=(0.5, 4.0),
                 mlp_layer=Mlp,
                 norm_layer=norm_layer,
