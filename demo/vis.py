@@ -158,6 +158,7 @@ def get_pose3D(video_path, output_dir):
 
     ## 3D
     print('\nGenerating 3D pose...')
+    keypoints_3d = []
     for i in tqdm(range(video_length)):
         ret, img = cap.read()
         img_size = img.shape
@@ -210,6 +211,7 @@ def get_pose3D(video_path, output_dir):
         rot = np.array(rot, dtype='float32')
         post_out = camera_to_world(post_out, R=rot, t=0)
         post_out[:, 2] -= np.min(post_out[:, 2])
+        keypoints_3d.append(post_out)
 
         input_2D_no = input_2D_no[args.pad]
 
@@ -230,6 +232,11 @@ def get_pose3D(video_path, output_dir):
         output_dir_3D = output_dir +'pose3D/'
         os.makedirs(output_dir_3D, exist_ok=True)
         plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
+
+    ## Save 3D keypoints
+    keypoints_3d = np.asarray(keypoints_3d)
+    output_npz = output_dir + 'keypoints_3d.npz'
+    np.savez_compressed(output_npz, reconstruction=keypoints_3d)
         
     print('Generating 3D pose successfully!')
 

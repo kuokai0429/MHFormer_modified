@@ -1,0 +1,2 @@
+/home/brian/下載/MHFormer_revised/checkpoint/0512_1329_17_81 : MHFormer from Paper. (81 frame)
+/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MixerBlock. (81 frame)
