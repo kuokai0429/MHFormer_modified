@@ -241,6 +241,8 @@ class Transformer(nn.Module):
 
         self.norm = norm_layer(embed_dim)
 
+        # 2023.0514 MetaFormerBlock @Brian
+
     def forward(self, x):
         x += self.pos_embed
         x = self.pos_drop(x)
