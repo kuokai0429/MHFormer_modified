@@ -231,7 +231,7 @@ class Transformer(nn.Module):
             MixerBlock(
                 embed_dim,
                 length,
-                mlp_ratio=(0.5, 4.0),
+                mlp_ratio=(0.5, 2.0),
                 mlp_layer=Mlp,
                 norm_layer=norm_layer,
                 act_layer=nn.GELU,
