@@ -112,6 +112,40 @@ class SHR_Block(nn.Module):
         x_3 = x[:, :, x.shape[2] // 3 * 2: x.shape[2]]
 
         return  x_1, x_2, x_3
+    
+class SHR_MixerBlock(nn.Module):
+    def __init__(self, dim, num_heads, mlp_hidden_dim, qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+        super().__init__()
+        self.norm1_1 = norm_layer(dim)
+        self.norm1_2 = norm_layer(dim)
+        self.norm1_3 = norm_layer(dim)
+
+        self.attn_1 = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, \
+            qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        self.attn_2 = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, \
+            qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        self.attn_3 = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, \
+            qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+
+        self.norm2 = norm_layer(dim * 3)
+        self.mlp = Mlp(in_features=dim * 3, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+
+    def forward(self, x_1, x_2, x_3):
+        x_1 = x_1 + self.drop_path(self.attn_1(self.norm1_1(x_1)))
+        x_2 = x_2 + self.drop_path(self.attn_2(self.norm1_2(x_2)))
+        x_3 = x_3 + self.drop_path(self.attn_3(self.norm1_3(x_3)))
+
+        x = torch.cat([x_1, x_2, x_3], dim=2)
+        x = x + self.drop_path(self.mlp(self.norm2(x)))
+
+        x_1 = x[:, :, :x.shape[2] // 3]
+        x_2 = x[:, :, x.shape[2] // 3: x.shape[2] // 3 * 2]
+        x_3 = x[:, :, x.shape[2] // 3 * 2: x.shape[2]]
+
+        return  x_1, x_2, x_3
 
 class CHI_Block(nn.Module):
     def __init__(self, dim, num_heads, mlp_hidden_dim, qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
@@ -176,8 +210,16 @@ class Transformer(nn.Module):
         # stochastic depth decay rule
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
+        # @Paper
+        # self.SHR_blocks = nn.ModuleList([
+        #     SHR_Block(
+        #         dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
+        #         drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
+        #     for i in range(depth-1)])
+        
+        # 2023.0515 @Brian
         self.SHR_blocks = nn.ModuleList([
-            SHR_Block(
+            SHR_MixerBlock(
                 dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
             for i in range(depth-1)])

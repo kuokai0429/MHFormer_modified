@@ -221,18 +221,18 @@ class Transformer(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
         # Attention Block @Paper
-        # self.blocks = nn.ModuleList([
-        #     Block(
-        #         dim=embed_dim, 
-        #         num_heads=h, 
-        #         mlp_hidden_dim=mlp_hidden_dim, 
-        #         qkv_bias=qkv_bias, 
-        #         qk_scale=qk_scale,
-        #         drop=drop_rate, 
-        #         attn_drop=attn_drop_rate, 
-        #         drop_path=dpr[i], 
-        #         norm_layer=norm_layer)
-        #     for i in range(depth)])
+        self.blocks = nn.ModuleList([
+            Block(
+                dim=embed_dim, 
+                num_heads=h, 
+                mlp_hidden_dim=mlp_hidden_dim, 
+                qkv_bias=qkv_bias, 
+                qk_scale=qk_scale,
+                drop=drop_rate, 
+                attn_drop=attn_drop_rate, 
+                drop_path=dpr[i], 
+                norm_layer=norm_layer)
+            for i in range(depth)])
 
         # 2023.0513 MixerBlock @Brian
         # self.blocks = nn.ModuleList([
@@ -248,19 +248,19 @@ class Transformer(nn.Module):
         #     for i in range(depth)])
         
         # 2023.0514 MetaFormerBlock @Brian
-        self.blocks = nn.ModuleList([
-            MetaFormerBlock(
-                dim=embed_dim,
-                token_mixer=Pooling,
-                mlp_act=StarReLU,
-                mlp_bias=False,
-                norm_layer=norm_layer,
-                proj_drop=0.,
-                drop_path=dpr[i],
-                layer_scale_init_value=None,
-                res_scale_init_value=None,
-                use_nchw=not issubclass(Pooling, Attention))
-            for i in range(depth)])
+        # self.blocks = nn.ModuleList([
+        #     MetaFormerBlock(
+        #         dim=embed_dim,
+        #         token_mixer=Pooling,
+        #         mlp_act=StarReLU,
+        #         mlp_bias=False,
+        #         norm_layer=norm_layer,
+        #         proj_drop=0.,
+        #         drop_path=dpr[i],
+        #         layer_scale_init_value=None,
+        #         res_scale_init_value=None,
+        #         use_nchw=not issubclass(Pooling, Attention))
+        #     for i in range(depth)])
 
         self.norm = norm_layer(embed_dim)
 
