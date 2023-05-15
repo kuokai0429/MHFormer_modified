@@ -181,9 +181,9 @@ class MetaFormerBlock(nn.Module):
             dim,
             int(4 * dim),
             act_layer=mlp_act,
-            bias=mlp_bias,
+            # bias=mlp_bias,
             drop=proj_drop,
-            use_conv=use_nchw,
+            # use_conv=use_nchw,
         )
         self.drop_path2 = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.layer_scale2 = ls_layer() if layer_scale_init_value is not None else nn.Identity()
@@ -220,28 +220,50 @@ class Transformer(nn.Module):
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
+        # Attention Block @Paper
         # self.blocks = nn.ModuleList([
         #     Block(
-        #         dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
-        #         drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
+        #         dim=embed_dim, 
+        #         num_heads=h, 
+        #         mlp_hidden_dim=mlp_hidden_dim, 
+        #         qkv_bias=qkv_bias, 
+        #         qk_scale=qk_scale,
+        #         drop=drop_rate, 
+        #         attn_drop=attn_drop_rate, 
+        #         drop_path=dpr[i], 
+        #         norm_layer=norm_layer)
         #     for i in range(depth)])
 
         # 2023.0513 MixerBlock @Brian
+        # self.blocks = nn.ModuleList([
+        #     MixerBlock(
+        #         embed_dim,
+        #         length,
+        #         mlp_ratio=(0.5, 2.0),
+        #         mlp_layer=Mlp,
+        #         norm_layer=norm_layer,
+        #         act_layer=nn.GELU,
+        #         drop=0.,
+        #         drop_path=0.)
+        #     for i in range(depth)])
+        
+        # 2023.0514 MetaFormerBlock @Brian
         self.blocks = nn.ModuleList([
-            MixerBlock(
-                embed_dim,
-                length,
-                mlp_ratio=(0.5, 2.0),
-                mlp_layer=Mlp,
+            MetaFormerBlock(
+                dim=embed_dim,
+                token_mixer=Pooling,
+                mlp_act=StarReLU,
+                mlp_bias=False,
                 norm_layer=norm_layer,
-                act_layer=nn.GELU,
-                drop=0.,
-                drop_path=0.)
+                proj_drop=0.,
+                drop_path=dpr[i],
+                layer_scale_init_value=None,
+                res_scale_init_value=None,
+                use_nchw=not issubclass(Pooling, Attention))
             for i in range(depth)])
 
         self.norm = norm_layer(embed_dim)
 
-        # 2023.0514 MetaFormerBlock @Brian
 
     def forward(self, x):
         x += self.pos_embed
