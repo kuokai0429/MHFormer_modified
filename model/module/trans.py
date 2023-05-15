@@ -134,7 +134,9 @@ class MixerBlock(nn.Module):
             drop_path=0.,
     ):
         super().__init__()
+        
         tokens_dim, channels_dim = [int(x * dim) for x in to_2tuple(mlp_ratio)]
+        
         self.norm1 = norm_layer(dim)
         self.mlp_tokens = mlp_layer(seq_len, tokens_dim, act_layer=act_layer, drop=drop)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
@@ -145,7 +147,6 @@ class MixerBlock(nn.Module):
         x = x + self.drop_path(self.mlp_tokens(self.norm1(x).transpose(1, 2)).transpose(1, 2))
         x = x + self.drop_path(self.mlp_channels(self.norm2(x)))
         return x
-    
 
 class MetaFormerBlock(nn.Module):
     """
@@ -167,6 +168,7 @@ class MetaFormerBlock(nn.Module):
             **kwargs
     ):
         super().__init__()
+
         ls_layer = partial(Scale, dim=dim, init_value=layer_scale_init_value, use_nchw=use_nchw)
         rs_layer = partial(Scale, dim=dim, init_value=res_scale_init_value, use_nchw=use_nchw)
 
@@ -239,7 +241,7 @@ class Transformer(nn.Module):
         #     MixerBlock(
         #         embed_dim,
         #         length,
-        #         mlp_ratio=(0.5, 2.0),
+        #         mlp_ratio=(0.5, 4.0),
         #         mlp_layer=Mlp,
         #         norm_layer=norm_layer,
         #         act_layer=nn.GELU,

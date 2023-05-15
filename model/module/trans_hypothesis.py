@@ -2,7 +2,7 @@ import math
 import torch
 import torch.nn as nn
 from functools import partial
-from timm.models.layers import DropPath
+from timm.models.layers import DropPath, to_2tuple
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -114,32 +114,40 @@ class SHR_Block(nn.Module):
         return  x_1, x_2, x_3
     
 class SHR_MixerBlock(nn.Module):
-    def __init__(self, dim, num_heads, mlp_hidden_dim, qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
-                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+    def __init__(self,
+            dim,
+            seq_len,
+            mlp_ratio=(0.5, 4.0),
+            mlp_layer=Mlp,
+            norm_layer=partial(nn.LayerNorm, eps=1e-6),
+            act_layer=nn.GELU,
+            drop=0.,
+            drop_path=0.):
         super().__init__()
+
+        tokens_dim, channels_dim = [int(x * dim) for x in to_2tuple(mlp_ratio)]
+
         self.norm1_1 = norm_layer(dim)
         self.norm1_2 = norm_layer(dim)
         self.norm1_3 = norm_layer(dim)
 
-        self.attn_1 = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, \
-            qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
-        self.attn_2 = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, \
-            qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
-        self.attn_3 = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, \
-            qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        self.mlp_tokens_1 = mlp_layer(seq_len, tokens_dim, act_layer=act_layer, drop=drop)
+        self.mlp_tokens_2 = mlp_layer(seq_len, tokens_dim, act_layer=act_layer, drop=drop)
+        self.mlp_tokens_3 = mlp_layer(seq_len, tokens_dim, act_layer=act_layer, drop=drop)
 
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
 
         self.norm2 = norm_layer(dim * 3)
-        self.mlp = Mlp(in_features=dim * 3, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+
+        self.mlp_channels = mlp_layer(dim * 3, channels_dim, act_layer=act_layer, drop=drop)
 
     def forward(self, x_1, x_2, x_3):
-        x_1 = x_1 + self.drop_path(self.attn_1(self.norm1_1(x_1)))
-        x_2 = x_2 + self.drop_path(self.attn_2(self.norm1_2(x_2)))
-        x_3 = x_3 + self.drop_path(self.attn_3(self.norm1_3(x_3)))
+        x_1 = x_1 + self.drop_path(self.mlp_tokens_1(self.norm1_1(x_1).transpose(1, 2)).transpose(1, 2))
+        x_2 = x_2 + self.drop_path(self.mlp_tokens_2(self.norm1_2(x_2).transpose(1, 2)).transpose(1, 2))
+        x_3 = x_3 + self.drop_path(self.mlp_tokens_3(self.norm1_3(x_3).transpose(1, 2)).transpose(1, 2))
 
         x = torch.cat([x_1, x_2, x_3], dim=2)
-        x = x + self.drop_path(self.mlp(self.norm2(x)))
+        x = x + self.drop_path(self.mlp_channels(self.norm2(x)))
 
         x_1 = x[:, :, :x.shape[2] // 3]
         x_2 = x[:, :, x.shape[2] // 3: x.shape[2] // 3 * 2]
@@ -210,18 +218,24 @@ class Transformer(nn.Module):
         # stochastic depth decay rule
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
-        # @Paper
+        # Attention SHR Blocks @Paper
         # self.SHR_blocks = nn.ModuleList([
         #     SHR_Block(
         #         dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
         #         drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
         #     for i in range(depth-1)])
         
-        # 2023.0515 @Brian
+        # 2023.0515 MlpMixer SHR Blocks @Brian
         self.SHR_blocks = nn.ModuleList([
             SHR_MixerBlock(
-                dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
+                embed_dim,
+                length,
+                mlp_ratio=(0.5, 4.0),
+                mlp_layer=Mlp,
+                norm_layer=norm_layer,
+                act_layer=nn.GELU,
+                drop=0.,
+                drop_path=0.)
             for i in range(depth-1)])
 
         self.CHI_blocks = nn.ModuleList([

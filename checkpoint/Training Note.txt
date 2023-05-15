@@ -1,4 +1,5 @@
 /home/brian/下載/MHFormer_revised/checkpoint/0512_1329_17_81 : MHFormer from Paper. (frames=81)
-/home/brian/下載/MHFormer_revised/checkpoint/0514_0116_41_81 : MHFormer with MixerBlock. (frames=81, mlp_ratio=(0.5, 4.0))
-/home/brian/下載/MHFormer_revised/checkpoint/0514_1028_02_81 : MHFormer with MixerBlock. (frames=81, mlp_ratio=(0.5, 2.0))
-/home/brian/下載/MHFormer_revised/checkpoint/0514_1813_03_81 : MHFormer with MetaFormerBlock. (frames=81, token_mixer=Pooling)
+/home/brian/下載/MHFormer_revised/checkpoint/0514_0116_41_81 : MHFormer with MixerBlock(trans.py). (frames=81, mlp_ratio=(0.5, 4.0))
+/home/brian/下載/MHFormer_revised/checkpoint/0514_1028_02_81 : MHFormer with MixerBlock(trans.py). (frames=81, mlp_ratio=(0.5, 2.0))
+/home/brian/下載/MHFormer_revised/checkpoint/0514_1813_03_81 : MHFormer with MetaFormerBlock(trans.py). (frames=81, token_mixer=Pooling)
+/home/brian/下載/MHFormer_revised/checkpoint/0515_2326_12_81 : MHFormer with SHR_MixerBlock(trans_hypothesis.py). (frames=81, mlp_ratio=(0.5, 4.0))
