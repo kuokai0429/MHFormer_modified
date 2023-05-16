@@ -223,31 +223,31 @@ class Transformer(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
         # Attention Block @Paper
-        self.blocks = nn.ModuleList([
-            Block(
-                dim=embed_dim, 
-                num_heads=h, 
-                mlp_hidden_dim=mlp_hidden_dim, 
-                qkv_bias=qkv_bias, 
-                qk_scale=qk_scale,
-                drop=drop_rate, 
-                attn_drop=attn_drop_rate, 
-                drop_path=dpr[i], 
-                norm_layer=norm_layer)
-            for i in range(depth)])
+        # self.blocks = nn.ModuleList([
+        #     Block(
+        #         dim=embed_dim, 
+        #         num_heads=h, 
+        #         mlp_hidden_dim=mlp_hidden_dim, 
+        #         qkv_bias=qkv_bias, 
+        #         qk_scale=qk_scale,
+        #         drop=drop_rate, 
+        #         attn_drop=attn_drop_rate, 
+        #         drop_path=dpr[i], 
+        #         norm_layer=norm_layer)
+        #     for i in range(depth)])
 
         # 2023.0513 MixerBlock @Brian
-        # self.blocks = nn.ModuleList([
-        #     MixerBlock(
-        #         embed_dim,
-        #         length,
-        #         mlp_ratio=(0.5, 2.0),
-        #         mlp_layer=Mlp,
-        #         norm_layer=norm_layer,
-        #         act_layer=nn.GELU,
-        #         drop=0.,
-        #         drop_path=0.)
-        #     for i in range(depth)])
+        self.blocks = nn.ModuleList([
+            MixerBlock(
+                embed_dim,
+                length,
+                mlp_ratio=(0.25, 2.0),
+                mlp_layer=Mlp,
+                norm_layer=norm_layer,
+                act_layer=nn.GELU,
+                drop=0.,
+                drop_path=0.)
+            for i in range(depth)])
         
         # 2023.0514 MetaFormerBlock @Brian
         # self.blocks = nn.ModuleList([

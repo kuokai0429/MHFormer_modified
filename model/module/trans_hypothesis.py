@@ -219,24 +219,24 @@ class Transformer(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
         # Attention SHR Blocks @Paper
-        # self.SHR_blocks = nn.ModuleList([
-        #     SHR_Block(
-        #         dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
-        #         drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
-        #     for i in range(depth-1)])
+        self.SHR_blocks = nn.ModuleList([
+            SHR_Block(
+                dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
+            for i in range(depth-1)])
         
         # 2023.0515 MlpMixer SHR Blocks @Brian
-        self.SHR_blocks = nn.ModuleList([
-            SHR_MixerBlock(
-                embed_dim,
-                length,
-                mlp_ratio=(0.5, 2.0),
-                mlp_layer=Mlp,
-                norm_layer=norm_layer,
-                act_layer=nn.GELU,
-                drop=0.,
-                drop_path=0.)
-            for i in range(depth-1)])
+        # self.SHR_blocks = nn.ModuleList([
+        #     SHR_MixerBlock(
+        #         embed_dim,
+        #         length,
+        #         mlp_ratio=(0.5, 2.0),
+        #         mlp_layer=Mlp,
+        #         norm_layer=norm_layer,
+        #         act_layer=nn.GELU,
+        #         drop=0.,
+        #         drop_path=0.)
+        #     for i in range(depth-1)])
 
         self.CHI_blocks = nn.ModuleList([
             CHI_Block(
