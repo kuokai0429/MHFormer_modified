@@ -41,6 +41,15 @@ class Scale(nn.Module):
 
     def forward(self, x):
         return x * self.scale.view(self.shape)
+    
+class Affine(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.alpha = nn.Parameter(torch.ones((1, 1, dim)))
+        self.beta = nn.Parameter(torch.zeros((1, 1, dim)))
+
+    def forward(self, x):
+        return torch.addcmul(self.beta, self.alpha, x)
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -118,7 +127,7 @@ class Block(nn.Module):
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
     
-class MixerBlock(nn.Module):
+class MLPMixerBlock(nn.Module):
     """ Residual Block w/ token mixing and channel MLPs
     Based on: 'MLP-Mixer: An all-MLP Architecture for Vision' - https://arxiv.org/abs/2105.01601
     """
@@ -146,6 +155,58 @@ class MixerBlock(nn.Module):
     def forward(self, x):
         x = x + self.drop_path(self.mlp_tokens(self.norm1(x).transpose(1, 2)).transpose(1, 2))
         x = x + self.drop_path(self.mlp_channels(self.norm2(x)))
+        return x
+    
+# class ResMLPBlock(nn.Module):
+#     def __init__(self, dim, num_patches, mlp_ratio=4, act_layer=nn.GELU, drop=0.):
+#         super().__init__()
+#         self.norm1 = nn.LayerNorm(dim)
+#         self.mlp = nn.Sequential(
+#             nn.Linear(dim, dim * mlp_ratio),
+#             act_layer(),
+#             nn.Dropout(drop),
+#             nn.Linear(dim * mlp_ratio, dim),
+#             nn.Dropout(drop)
+#         )
+#         self.norm2 = nn.LayerNorm(dim)
+#         self.proj = nn.Linear(num_patches, dim)
+#         self.drop_path = nn.Identity()
+
+#     def forward(self, x):
+#         x = x + self.drop_path(self.mlp(self.norm1(x)))
+#         x = x + self.drop_path(self.proj(self.norm2(torch.mean(x, dim=1, keepdim=True))))
+#         return x
+
+class ResMLPBlock(nn.Module):
+    """ Residual MLP block w/ LayerScale and Affine 'norm'
+
+    Based on: `ResMLP: Feedforward networks for image classification...` - https://arxiv.org/abs/2105.03404
+    """
+    def __init__(
+            self,
+            dim,
+            seq_len,
+            mlp_ratio=4,
+            mlp_layer=Mlp,
+            norm_layer=Affine,
+            act_layer=nn.GELU,
+            init_values=1e-4,
+            drop=0.,
+            drop_path=0.,
+    ):
+        super().__init__()
+        channel_dim = int(dim * mlp_ratio)
+        self.norm1 = norm_layer(dim)
+        self.linear_tokens = nn.Linear(seq_len, seq_len)
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.norm2 = norm_layer(dim)
+        self.mlp_channels = mlp_layer(dim, channel_dim, act_layer=act_layer, drop=drop)
+        self.ls1 = nn.Parameter(init_values * torch.ones(dim))
+        self.ls2 = nn.Parameter(init_values * torch.ones(dim))
+
+    def forward(self, x):
+        x = x + self.drop_path(self.ls1 * self.linear_tokens(self.norm1(x).transpose(1, 2)).transpose(1, 2))
+        x = x + self.drop_path(self.ls2 * self.mlp_channels(self.norm2(x)))
         return x
 
 class MetaFormerBlock(nn.Module):
@@ -236,9 +297,9 @@ class Transformer(nn.Module):
         #         norm_layer=norm_layer)
         #     for i in range(depth)])
 
-        # 2023.0513 MixerBlock @Brian
+        # 2023.0513 MLPMixerBlock @Brian
         self.blocks = nn.ModuleList([
-            MixerBlock(
+            MLPMixerBlock(
                 embed_dim,
                 length,
                 mlp_ratio=(0.25, 2.0),

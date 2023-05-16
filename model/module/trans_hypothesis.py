@@ -113,7 +113,7 @@ class SHR_Block(nn.Module):
 
         return  x_1, x_2, x_3
     
-class SHR_MixerBlock(nn.Module):
+class SHR_MLPMixerBlock(nn.Module):
     def __init__(self,
             dim,
             seq_len,
@@ -227,7 +227,7 @@ class Transformer(nn.Module):
         
         # 2023.0515 MlpMixer SHR Blocks @Brian
         # self.SHR_blocks = nn.ModuleList([
-        #     SHR_MixerBlock(
+        #     SHR_MLPMixerBlock(
         #         embed_dim,
         #         length,
         #         mlp_ratio=(0.5, 2.0),
