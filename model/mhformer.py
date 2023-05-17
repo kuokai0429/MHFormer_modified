@@ -8,7 +8,7 @@ class Model(nn.Module):
     def __init__(self, args):
         super().__init__()
 
-        ## MHG
+        ## MHG : b (j c) f
         self.norm_1 = nn.LayerNorm(args.frames)
         self.norm_2 = nn.LayerNorm(args.frames)
         self.norm_3 = nn.LayerNorm(args.frames)
@@ -44,7 +44,7 @@ class Model(nn.Module):
                 nn.Dropout(0.25)
             )
 
-        ## SHR & CHI
+        ## SHR & CHI : b f (j c)
         self.Transformer_hypothesis = Transformer_hypothesis(args.layers, args.channel, args.d_hid, length=args.frames)
         
         ## Regression
@@ -57,7 +57,7 @@ class Model(nn.Module):
         B, F, J, C = x.shape
         x = rearrange(x, 'b f j c -> b (j c) f').contiguous()
 
-        ## MHG
+        ## MHG : b (j c) f
         x_1 = x   + self.Transformer_encoder_1(self.norm_1(x))
         x_2 = x_1 + self.Transformer_encoder_2(self.norm_2(x_1)) 
         x_3 = x_2 + self.Transformer_encoder_3(self.norm_3(x_2))
@@ -67,10 +67,10 @@ class Model(nn.Module):
         x_2 = self.embedding_2(x_2).permute(0, 2, 1).contiguous()
         x_3 = self.embedding_3(x_3).permute(0, 2, 1).contiguous()
 
-        ## SHR & CHI
+        ## SHR & CHI : b f (j c)
         x = self.Transformer_hypothesis(x_1, x_2, x_3) 
 
-        ## Regression
+        ## Regression : b f (j c) -> b (j c) f -> b f j c
         x = x.permute(0, 2, 1).contiguous() 
         x = self.regression(x) 
         x = rearrange(x, 'b (j c) f -> b f j c', j=J).contiguous()
