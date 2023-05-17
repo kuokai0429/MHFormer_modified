@@ -298,11 +298,24 @@ class Transformer(nn.Module):
         #     for i in range(depth)])
 
         # 2023.0513 MLPMixerBlock @Brian
+        # self.blocks = nn.ModuleList([
+        #     MLPMixerBlock(
+        #         embed_dim,
+        #         length,
+        #         mlp_ratio=(0.25, 2.0),
+        #         mlp_layer=Mlp,
+        #         norm_layer=norm_layer,
+        #         act_layer=nn.GELU,
+        #         drop=0.,
+        #         drop_path=0.)
+        #     for i in range(depth)])
+
+        # 2023.0517 ResMLPBlock @Brian
         self.blocks = nn.ModuleList([
-            MLPMixerBlock(
+            ResMLPBlock(
                 embed_dim,
                 length,
-                mlp_ratio=(0.25, 2.0),
+                mlp_ratio=2.0,
                 mlp_layer=Mlp,
                 norm_layer=norm_layer,
                 act_layer=nn.GELU,
