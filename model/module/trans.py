@@ -3,6 +3,10 @@
 import math
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from torch import einsum
+from einops import rearrange, repeat
+from einops.layers.torch import Rearrange
 from functools import partial
 from timm.models.layers import DropPath, LayerNorm2d, to_2tuple
 
@@ -50,6 +54,61 @@ class Affine(nn.Module):
 
     def forward(self, x):
         return torch.addcmul(self.beta, self.alpha, x)
+    
+class RMSNorm(nn.Module):
+    def __init__(self, d, p=-1., eps=1e-8, bias=False):
+        """
+            Root Mean Square Layer Normalization
+        :param d: model size
+        :param p: partial RMSNorm, valid value [0, 1], default -1.0 (disabled)
+        :param eps:  epsilon value, default 1e-8
+        :param bias: whether use bias term for RMSNorm, disabled by
+            default because RMSNorm doesn't enforce re-centering invariance.
+        """
+        super(RMSNorm, self).__init__()
+
+        self.eps = eps
+        self.d = d
+        self.p = p
+        self.bias = bias
+
+        self.scale = nn.Parameter(torch.ones(d))
+        stdv = 1. / math.sqrt(d/3)
+        self.scale.data.uniform_(-stdv, stdv)
+
+        self.register_parameter("scale", self.scale)
+
+        if self.bias:
+            self.offset = nn.Parameter(torch.zeros(d))
+            self.register_parameter("offset", self.offset)
+
+    def forward(self, x):
+        if self.p < 0. or self.p > 1.:
+            norm_x = x.norm(2, dim=-1, keepdim=True)
+            d_x = self.d
+        else:
+            partial_size = int(self.d * self.p)
+            partial_x, _ = torch.split(x, [partial_size, self.d - partial_size], dim=-1)
+
+            norm_x = partial_x.norm(2, dim=-1, keepdim=True)
+            d_x = partial_size
+
+        rms_x = norm_x * d_x ** (-1. / 2)
+        x_normed = x / (rms_x + self.eps)
+
+        if self.bias:
+            return self.scale * x_normed + self.offset
+
+        return self.scale * x_normed
+
+class PreNorm(nn.Module):
+    def __init__(self, dim, fn):
+        super().__init__()
+        self.norm = nn.LayerNorm(dim)
+        self.fn = fn
+
+    def forward(self, x, **kwargs):
+        return self.fn(self.norm(x), **kwargs)
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -68,6 +127,20 @@ class Mlp(nn.Module):
         x = self.fc2(x)
         x = self.drop(x)
         return x
+    
+class Pooling(nn.Module):
+    """
+    Implementation of pooling for PoolFormer: https://arxiv.org/abs/2111.11418
+    """
+
+    def __init__(self, pool_size=3, **kwargs):
+        super().__init__()
+        self.pool = nn.AvgPool2d(
+            pool_size, stride=1, padding=pool_size // 2, count_include_pad=False)
+
+    def forward(self, x):
+        y = self.pool(x)
+        return y - x
 
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
@@ -96,20 +169,40 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
-    
-class Pooling(nn.Module):
-    """
-    Implementation of pooling for PoolFormer: https://arxiv.org/abs/2111.11418
-    """
 
-    def __init__(self, pool_size=3, **kwargs):
+class RectifiedLinearAttention(nn.Module):
+    """ Rectified Linear Attention
+    This repo contain pytorch implementation of 'Sparse Attention with Linear Units'.
+    """
+    def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0., rmsnorm=False):
         super().__init__()
-        self.pool = nn.AvgPool2d(
-            pool_size, stride=1, padding=pool_size // 2, count_include_pad=False)
+        inner_dim = dim_head * heads
+        project_out = not (heads == 1 and dim_head == dim)
+        self.heads = heads
+        self.scale = dim_head ** -0.5
+
+        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+
+        self.norm = RMSNorm(inner_dim) if rmsnorm else nn.LayerNorm(inner_dim)
+
+        self.to_out = nn.Sequential(
+            nn.Linear(inner_dim, dim),
+            nn.Dropout(dropout)
+        ) if project_out else nn.Identity()
 
     def forward(self, x):
-        y = self.pool(x)
-        return y - x
+        b, n, _, h = *x.shape, self.heads
+        qkv = self.to_qkv(x).chunk(3, dim = -1)
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)
+
+        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+        attn = F.relu(dots)
+
+        out = einsum('b h i j, b h j d -> b h i d', attn, v)
+        out = rearrange(out, 'b h n d -> b n (h d)')
+
+        out =  self.to_out(self.norm(out))
+        return out
 
 class Block(nn.Module):
     def __init__(self, dim, num_heads, mlp_hidden_dim, qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
@@ -118,6 +211,21 @@ class Block(nn.Module):
         self.norm1 = norm_layer(dim)
         self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, \
             qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.norm2 = norm_layer(dim)
+        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+
+    def forward(self, x):
+        x = x + self.drop_path(self.attn(self.norm1(x)))
+        x = x + self.drop_path(self.mlp(self.norm2(x)))
+        return x
+    
+class RLABlock(nn.Module):
+    def __init__(self, dim, mlp_hidden_dim, drop=0., drop_path=0., act_layer=nn.GELU, 
+                 norm_layer=nn.LayerNorm):
+        super().__init__()
+        self.norm1 = norm_layer(dim)
+        self.attn = RectifiedLinearAttention(dim, rmsnorm=True)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
@@ -156,26 +264,6 @@ class MLPMixerBlock(nn.Module):
         x = x + self.drop_path(self.mlp_tokens(self.norm1(x).transpose(1, 2)).transpose(1, 2))
         x = x + self.drop_path(self.mlp_channels(self.norm2(x)))
         return x
-    
-# class ResMLPBlock(nn.Module):
-#     def __init__(self, dim, num_patches, mlp_ratio=4, act_layer=nn.GELU, drop=0.):
-#         super().__init__()
-#         self.norm1 = nn.LayerNorm(dim)
-#         self.mlp = nn.Sequential(
-#             nn.Linear(dim, dim * mlp_ratio),
-#             act_layer(),
-#             nn.Dropout(drop),
-#             nn.Linear(dim * mlp_ratio, dim),
-#             nn.Dropout(drop)
-#         )
-#         self.norm2 = nn.LayerNorm(dim)
-#         self.proj = nn.Linear(num_patches, dim)
-#         self.drop_path = nn.Identity()
-
-#     def forward(self, x):
-#         x = x + self.drop_path(self.mlp(self.norm1(x)))
-#         x = x + self.drop_path(self.proj(self.norm2(torch.mean(x, dim=1, keepdim=True))))
-#         return x
 
 class ResMLPBlock(nn.Module):
     """ Residual MLP block w/ LayerScale and Affine 'norm'
@@ -283,7 +371,7 @@ class Transformer(nn.Module):
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
-        # Attention Block @Paper
+        # Transformer Block with Attention @Paper
         # self.blocks = nn.ModuleList([
         #     Block(
         #         dim=embed_dim, 
@@ -296,6 +384,16 @@ class Transformer(nn.Module):
         #         drop_path=dpr[i], 
         #         norm_layer=norm_layer)
         #     for i in range(depth)])
+
+        # 2023.0517 Transformer Block with Rectified Linear Attention @Brian
+        self.blocks = nn.ModuleList([
+            RLABlock(
+                dim=embed_dim, 
+                mlp_hidden_dim=mlp_hidden_dim, 
+                drop=drop_rate, 
+                drop_path=dpr[i], 
+                norm_layer=norm_layer)
+            for i in range(depth)])
 
         # 2023.0513 MLPMixerBlock @Brian
         # self.blocks = nn.ModuleList([
@@ -311,17 +409,17 @@ class Transformer(nn.Module):
         #     for i in range(depth)])
 
         # 2023.0517 ResMLPBlock @Brian
-        self.blocks = nn.ModuleList([
-            ResMLPBlock(
-                embed_dim,
-                length,
-                mlp_ratio=2.0,
-                mlp_layer=Mlp,
-                norm_layer=norm_layer,
-                act_layer=nn.GELU,
-                drop=0.,
-                drop_path=0.)
-            for i in range(depth)])
+        # self.blocks = nn.ModuleList([
+        #     ResMLPBlock(
+        #         embed_dim,
+        #         length,
+        #         mlp_ratio=2.0,
+        #         mlp_layer=Mlp,
+        #         norm_layer=norm_layer,
+        #         act_layer=nn.GELU,
+        #         drop=0.,
+        #         drop_path=0.)
+        #     for i in range(depth)])
         
         # 2023.0514 MetaFormerBlock @Brian
         # self.blocks = nn.ModuleList([

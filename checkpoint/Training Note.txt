@@ -6,3 +6,4 @@
 /home/brian/下載/MHFormer_revised/checkpoint/0516_1541_20_81 : MHFormer with SHR_MixerBlock(trans_hypothesis.py). (frames=81, mlp_ratio=(0.5, 2.0))
 /home/brian/下載/MHFormer_revised/checkpoint/0516_2257_19_81 : MHFormer with MixerBlock(trans.py). (frames=81, mlp_ratio=(0.25, 2.0))
 /home/brian/下載/MHFormer_revised/checkpoint/0517_1255_15_81 : MHFormer with ResMLPBlock(trans.py). (frames=81, mlp_ratio=2.0)
+/home/brian/下載/MHFormer_revised/checkpoint/0517_2335_24_81 : MHFormer with Transformer Block with Rectified Linear Attention (trans.py). (frames=81)
