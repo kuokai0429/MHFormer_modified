@@ -12,7 +12,7 @@ from common.opt import opts
 from common.utils import *
 from common.load_data_hm36 import Fusion
 from common.h36m_dataset import Human36mDataset
-from model.mhformer import Model
+from model.mhformer import Model_Paper
 
 opt = opts().parse()
 os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     test_dataloader = torch.utils.data.DataLoader(test_data, batch_size=opt.batch_size,
                                                   shuffle=False, num_workers=int(opt.workers), pin_memory=True)
 
-    model = Model(opt).cuda()
+    model = Model_Paper(opt).cuda()
 
     model_dict = model.state_dict()
     if opt.previous_dir != '':
