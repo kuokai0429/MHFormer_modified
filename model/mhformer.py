@@ -11,6 +11,7 @@ class Model_Paper(nn.Module):
     def __init__(self, args):
         super().__init__()
 
+        ## Normalization @Paper
         self.norm_1 = nn.LayerNorm(args.frames)
         self.norm_2 = nn.LayerNorm(args.frames)
         self.norm_3 = nn.LayerNorm(args.frames)
@@ -20,7 +21,7 @@ class Model_Paper(nn.Module):
         self.Transformer_encoder_2 = Transformer_encoder(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
         self.Transformer_encoder_3 = Transformer_encoder(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
 
-        ## Embedding
+        ## Embedding @Paper
         if args.frames > 27:
             self.embedding_1 = nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1)
             self.embedding_2 = nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1)
@@ -50,13 +51,16 @@ class Model_Paper(nn.Module):
         ## SHR [BF(JC)] + CHI [BJ(JC)] @Paper
         self.Transformer_hypothesis_2 = Transformer_hypothesis_Paper(args.layers, args.channel, args.d_hid, length=args.frames)
         
-        ## Regression
+        ## Regression @Paper
         self.regression_2 = nn.Sequential(
             nn.BatchNorm1d(args.channel*3, momentum=0.1),
             nn.Conv1d(args.channel*3, 3*args.out_joints, kernel_size=1)
         )
 
-        ## 2023.0519 SHR [(BF)JC] @Brian
+        ## 2023.0521 SHR [(BF)JC] @Brian
+        self.Transformer_hypothesis_1 = Transformer_hypothesis_Proposed(args.layers, 32, args.d_hid, length=args.frames)
+
+        ## 2023.0521 Embedding & Regression @Brian
         self.frames = args.frames
         if args.frames > 27:
             self.Spatial_Patch_1 = nn.Conv1d(2, 32, kernel_size=1)
@@ -81,11 +85,11 @@ class Model_Paper(nn.Module):
                 nn.ReLU(inplace=True),
                 nn.Dropout(0.25)
             )
-        self.Transformer_hypothesis_1 = Transformer_hypothesis_Proposed(args.layers, 32, args.d_hid, length=args.frames)
         self.regression_1 = nn.Sequential(
             nn.BatchNorm1d(args.n_joints*32, momentum=0.1),
             nn.Conv1d(args.n_joints*32, args.channel, kernel_size=1)
         )
+        
 
     # MHG[B(JC)F] + SHR[BF(JC)] + CHI[BF(JC)] @Paper
     # def forward(self, x):
