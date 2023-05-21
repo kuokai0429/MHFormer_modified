@@ -52,7 +52,7 @@ class Model_Paper(nn.Module):
         self.Transformer_hypothesis_2 = Transformer_hypothesis_Paper(args.layers, args.channel, args.d_hid, length=args.frames)
         
         ## Regression @Paper
-        self.regression_2 = nn.Sequential(
+        self.regression = nn.Sequential(
             nn.BatchNorm1d(args.channel*3, momentum=0.1),
             nn.Conv1d(args.channel*3, 3*args.out_joints, kernel_size=1)
         )
@@ -85,8 +85,7 @@ class Model_Paper(nn.Module):
                 nn.ReLU(inplace=True),
                 nn.Dropout(0.25)
             )
-        self.regression_1 = nn.Sequential(
-            nn.BatchNorm1d(args.n_joints*32, momentum=0.1),
+        self.Spatial_Patch_4 = nn.Sequential(
             nn.Conv1d(args.n_joints*32, args.channel, kernel_size=1)
         )
         
@@ -128,7 +127,7 @@ class Model_Paper(nn.Module):
     #     ## Regression : b f (j c) -> b (j c) f -> b f j c
     #     x = x.permute(0, 2, 1).contiguous()
     #     print(f"5 {x.shape}")
-    #     x = self.regression_2(x)
+    #     x = self.regression(x)
     #     print(f"6 {x.shape}")
     #     x = rearrange(x, 'b (j c) f -> b f j c', j=J).contiguous()
     #     print(f"7 {x.shape}")
@@ -197,12 +196,12 @@ class Model_Paper(nn.Module):
         x_3 = rearrange(x_3, 'b f j c -> b (j c) f').contiguous()
 
         
-        ### Regression : b (j c) f -> b f (j c) @Brian
+        ### Embedding : b (j c) f -> b f (j c) @Brian
 
         # print(f"8 {x_1.shape}")
-        x_1 = self.regression_1(x_1).permute(0, 2, 1).contiguous() 
-        x_2 = self.regression_1(x_2).permute(0, 2, 1).contiguous() 
-        x_3 = self.regression_1(x_3).permute(0, 2, 1).contiguous() 
+        x_1 = self.Spatial_Patch_4(x_1).permute(0, 2, 1).contiguous() 
+        x_2 = self.Spatial_Patch_4(x_2).permute(0, 2, 1).contiguous() 
+        x_3 = self.Spatial_Patch_4(x_3).permute(0, 2, 1).contiguous() 
 
 
         ### SHR (Sequence coherence) & CHI : b f (j c)
@@ -216,7 +215,7 @@ class Model_Paper(nn.Module):
         # print(f"10 {x.shape}")
         x = x.permute(0, 2, 1).contiguous()
         # print(f"11 {x.shape}")
-        x = self.regression_2(x)
+        x = self.regression(x)
         # print(f"12 {x.shape}")
         x = rearrange(x, 'b (j c) f -> b f j c', j=J).contiguous()
         # print(f"13 {x.shape}")

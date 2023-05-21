@@ -2,7 +2,7 @@
   actions: *
   batch_size: 256
   channel: 512
-  checkpoint: checkpoint/0522_0021_59_81
+  checkpoint: checkpoint/0522_0212_29_81
   crop_uv: 0
   d_hid: 1024
   data_augmentation: True
