@@ -90,7 +90,6 @@ class Model_Paper(nn.Module):
     # MHG[B(JC)F] + SHR[BF(JC)] + CHI[BF(JC)] @Paper
     # def forward(self, x):
     #     '''
-    #         @Paper:
     #         0 torch.Size([256, 81, 17, 2])
     #         1 torch.Size([256, 34, 81])
     #         2 torch.Size([256, 34, 81])
@@ -135,7 +134,6 @@ class Model_Paper(nn.Module):
     # 2023.0521 MHG[B(JC)F] + SHR[(BF)JC] + SHR[BF(JC)] + CHI[BF(JC)] @Brian
     def forward(self, x):
         '''
-            @Brian:
             0 torch.Size([256, 81, 17, 2])
             1 torch.Size([256, 34, 81])
             2 torch.Size([256, 34, 81])
@@ -156,13 +154,17 @@ class Model_Paper(nn.Module):
         B, F, J, C = x.shape
         x = rearrange(x, 'b f j c -> b (j c) f').contiguous()
 
-        ## MHG : b (j c) f
+
+        ### MHG : b (j c) f
+
         # print(f"1 {x.shape}")
         x_1 = x   + self.Transformer_encoder_1(self.norm_1(x))
         x_2 = x_1 + self.Transformer_encoder_2(self.norm_2(x_1)) 
         x_3 = x_2 + self.Transformer_encoder_3(self.norm_3(x_2))
 
-        ## Embedding : b (j c) f -> (b f) j c @Brian
+
+        ### Embedding : b (j c) f -> (b f) j c @Brian
+
         # print(f"2 {x_1.shape}")
         x_1 = rearrange(x_1, 'b (j c) f -> b f j c', j=J).contiguous()
         x_2 = rearrange(x_2, 'b (j c) f -> b f j c', j=J).contiguous()
@@ -176,7 +178,9 @@ class Model_Paper(nn.Module):
         x_2 = self.Spatial_Patch_2(x_2.permute(0, 2, 1).contiguous()).permute(0, 2, 1).contiguous()
         x_3 = self.Spatial_Patch_3(x_3.permute(0, 2, 1).contiguous()).permute(0, 2, 1).contiguous()
 
-        ## SHR (Kinematic correlation) : (b f) j c @Brian
+
+        ### SHR (Kinematic correlation) : (b f) j c @Brian
+
         # print(f"5 {x_1.shape}")
         x_1, x_2, x_3 = self.Transformer_hypothesis_1(x_1, x_2, x_3)
         # print(f"6 {x_1.shape}")
@@ -187,18 +191,24 @@ class Model_Paper(nn.Module):
         x_1 = rearrange(x_1, 'b f j c -> b (j c) f').contiguous()
         x_2 = rearrange(x_2, 'b f j c -> b (j c) f').contiguous()
         x_3 = rearrange(x_3, 'b f j c -> b (j c) f').contiguous()
+
         
-        ## Regression : b (j c) f -> b f (j c) @Brian
+        ### Regression : b (j c) f -> b f (j c) @Brian
+
         # print(f"8 {x_1.shape}")
         x_1 = self.regression_1(x_1).permute(0, 2, 1).contiguous() 
         x_2 = self.regression_1(x_2).permute(0, 2, 1).contiguous() 
         x_3 = self.regression_1(x_3).permute(0, 2, 1).contiguous() 
 
-        ## SHR (Sequence coherence) & CHI : b f (j c)
+
+        ### SHR (Sequence coherence) & CHI : b f (j c)
+
         # print(f"9 {x_1.shape}")
         x = self.Transformer_hypothesis_2(x_1, x_2, x_3) 
 
-        ## Regression : b f (j c) -> b (j c) f -> b f j c
+
+        ### Regression : b f (j c) -> b (j c) f -> b f j c
+
         # print(f"10 {x.shape}")
         x = x.permute(0, 2, 1).contiguous()
         # print(f"11 {x.shape}")
