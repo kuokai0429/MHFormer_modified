@@ -275,9 +275,9 @@ class Transformer_Proposed(nn.Module):
 
         norm_layer = partial(nn.LayerNorm, eps=1e-6)
 
-        self.pos_embed_1 = nn.Parameter(torch.zeros(1, length, embed_dim))
-        self.pos_embed_2 = nn.Parameter(torch.zeros(1, length, embed_dim))
-        self.pos_embed_3 = nn.Parameter(torch.zeros(1, length, embed_dim))
+        self.pos_embed_1 = nn.Parameter(torch.zeros(1, 17, embed_dim))
+        self.pos_embed_2 = nn.Parameter(torch.zeros(1, 17, embed_dim))
+        self.pos_embed_3 = nn.Parameter(torch.zeros(1, 17, embed_dim))
 
         self.pos_drop_1 = nn.Dropout(p=drop_rate)
         self.pos_drop_2 = nn.Dropout(p=drop_rate)
@@ -293,13 +293,7 @@ class Transformer_Proposed(nn.Module):
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
             for i in range(depth-1)])
 
-        self.CHI_blocks = nn.ModuleList([
-            CHI_Block(
-                dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[depth-1], norm_layer=norm_layer)
-            for i in range(1)])
-
-        self.norm = norm_layer(embed_dim * 3)
+        self.norm = norm_layer(embed_dim)
 
     def forward(self, x_1, x_2, x_3):
         x_1 += self.pos_embed_1
@@ -313,12 +307,11 @@ class Transformer_Proposed(nn.Module):
         for i, blk in enumerate(self.SHR_blocks):
             x_1, x_2, x_3 = self.SHR_blocks[i](x_1, x_2, x_3)
 
-        x_1, x_2, x_3 = self.CHI_blocks[0](x_1, x_2, x_3)
+        x_1 = self.norm(x_1)
+        x_2 = self.norm(x_2)
+        x_3 = self.norm(x_3)
 
-        x = torch.cat([x_1, x_2, x_3], dim=2)
-        x = self.norm(x)
-
-        return x
+        return x_1, x_2, x_3
 
 
 

@@ -372,28 +372,28 @@ class Transformer(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
         # Transformer Block with Attention @Paper
-        # self.blocks = nn.ModuleList([
-        #     Block(
-        #         dim=embed_dim, 
-        #         num_heads=h, 
-        #         mlp_hidden_dim=mlp_hidden_dim, 
-        #         qkv_bias=qkv_bias, 
-        #         qk_scale=qk_scale,
-        #         drop=drop_rate, 
-        #         attn_drop=attn_drop_rate, 
-        #         drop_path=dpr[i], 
-        #         norm_layer=norm_layer)
-        #     for i in range(depth)])
-
-        # 2023.0517 Transformer Block with Rectified Linear Attention @Brian
         self.blocks = nn.ModuleList([
-            RLABlock(
+            Block(
                 dim=embed_dim, 
+                num_heads=h, 
                 mlp_hidden_dim=mlp_hidden_dim, 
+                qkv_bias=qkv_bias, 
+                qk_scale=qk_scale,
                 drop=drop_rate, 
+                attn_drop=attn_drop_rate, 
                 drop_path=dpr[i], 
                 norm_layer=norm_layer)
             for i in range(depth)])
+
+        # 2023.0517 Transformer Block with Rectified Linear Attention @Brian
+        # self.blocks = nn.ModuleList([
+        #     RLABlock(
+        #         dim=embed_dim, 
+        #         mlp_hidden_dim=mlp_hidden_dim, 
+        #         drop=drop_rate, 
+        #         drop_path=dpr[i], 
+        #         norm_layer=norm_layer)
+        #     for i in range(depth)])
 
         # 2023.0513 MLPMixerBlock @Brian
         # self.blocks = nn.ModuleList([
