@@ -133,5 +133,4 @@ dmypy.json
 *.zip
 *.npz
 *.pth
-cropped_*.mp4
 *.png

@@ -49,6 +49,84 @@ class Model_Paper(nn.Module):
             )
 
         ## SHR [BF(JC)] + CHI [BJ(JC)] @Paper
+        self.Transformer_hypothesis = Transformer_hypothesis_Paper(args.layers, args.channel, args.d_hid, length=args.frames)
+        
+        ## Regression @Paper
+        self.regression = nn.Sequential(
+            nn.BatchNorm1d(args.channel*3, momentum=0.1),
+            nn.Conv1d(args.channel*3, 3*args.out_joints, kernel_size=1)
+        )
+        
+
+    # MHG[B(JC)F] + SHR[BF(JC)] + CHI[BF(JC)] @Paper
+    def forward(self, x):
+
+        B, F, J, C = x.shape
+        x = rearrange(x, 'b f j c -> b (j c) f').contiguous()
+
+        ## MHG : b (j c) f
+        x_1 = x   + self.Transformer_encoder_1(self.norm_1(x))
+        x_2 = x_1 + self.Transformer_encoder_2(self.norm_2(x_1)) 
+        x_3 = x_2 + self.Transformer_encoder_3(self.norm_3(x_2))
+
+        ## Embedding : b (j c) f -> b f (j c) -> b f (j c)
+        x_1 = self.embedding_1(x_1).permute(0, 2, 1).contiguous() 
+        x_2 = self.embedding_2(x_2).permute(0, 2, 1).contiguous()
+        x_3 = self.embedding_3(x_3).permute(0, 2, 1).contiguous()
+
+        ## SHR (Sequence coherence) & CHI : b f (j c)
+        x = self.Transformer_hypothesis(x_1, x_2, x_3) 
+
+        ## Regression : b f (j c) -> b (j c) f -> b f j c
+        x = x.permute(0, 2, 1).contiguous()
+        x = self.regression(x)
+        x = rearrange(x, 'b (j c) f -> b f j c', j=J).contiguous()
+
+        return x
+
+
+class Model_Proposed(nn.Module):
+    def __init__(self, args):
+        super().__init__()
+
+        ## Normalization @Paper
+        self.norm_1 = nn.LayerNorm(args.frames)
+        self.norm_2 = nn.LayerNorm(args.frames)
+        self.norm_3 = nn.LayerNorm(args.frames)
+
+        ## MHG [B(JC)F] @Paper
+        self.Transformer_encoder_1 = Transformer_encoder(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        self.Transformer_encoder_2 = Transformer_encoder(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        self.Transformer_encoder_3 = Transformer_encoder(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+
+        ## Embedding @Paper
+        if args.frames > 27:
+            self.embedding_1 = nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1)
+            self.embedding_2 = nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1)
+            self.embedding_3 = nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1)
+        else:
+            self.embedding_1 = nn.Sequential(
+                nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1),
+                nn.BatchNorm1d(args.channel, momentum=0.1),
+                nn.ReLU(inplace=True),
+                nn.Dropout(0.25)
+            )
+
+            self.embedding_2 = nn.Sequential(
+                nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1),
+                nn.BatchNorm1d(args.channel, momentum=0.1),
+                nn.ReLU(inplace=True),
+                nn.Dropout(0.25)
+            )
+
+            self.embedding_3 = nn.Sequential(
+                nn.Conv1d(2*args.out_joints, args.channel, kernel_size=1),
+                nn.BatchNorm1d(args.channel, momentum=0.1),
+                nn.ReLU(inplace=True),
+                nn.Dropout(0.25)
+            )
+
+        ## SHR [BF(JC)] + CHI [BJ(JC)] @Paper
         self.Transformer_hypothesis_2 = Transformer_hypothesis_Paper(args.layers, args.channel, args.d_hid, length=args.frames)
         
         ## Regression @Paper
@@ -103,34 +181,35 @@ class Model_Paper(nn.Module):
     #         7 torch.Size([256, 81, 17, 3])
     #     '''
 
-    #     print(f"0 {x.shape}")
+    #     # print(f"0 {x.shape}")
     #     B, F, J, C = x.shape
     #     x = rearrange(x, 'b f j c -> b (j c) f').contiguous()
 
     #     ## MHG : b (j c) f
-    #     print(f"1 {x.shape}")
+    #     # print(f"1 {x.shape}")
     #     x_1 = x   + self.Transformer_encoder_1(self.norm_1(x))
     #     x_2 = x_1 + self.Transformer_encoder_2(self.norm_2(x_1)) 
     #     x_3 = x_2 + self.Transformer_encoder_3(self.norm_3(x_2))
 
     #     ## Embedding : b (j c) f -> b f (j c) -> b f (j c)
-    #     print(f"2 {x_1.shape}")
+    #     # print(f"2 {x_1.shape}")
     #     x_1 = self.embedding_1(x_1).permute(0, 2, 1).contiguous() 
     #     x_2 = self.embedding_2(x_2).permute(0, 2, 1).contiguous()
     #     x_3 = self.embedding_3(x_3).permute(0, 2, 1).contiguous()
 
     #     ## SHR (Sequence coherence) & CHI : b f (j c)
-    #     print(f"3 {x_1.shape}")
-    #     x = self.Transformer_hypothesis_2(x_1, x_2, x_3) 
-    #     print(f"4 {x.shape}")
+    #     # print(f"3 {x_1.shape}")
+    #     # x = self.Transformer_hypothesis_2(x_1, x_2, x_3)
+    #     x = self.Transformer_hypothesis(x_1, x_2, x_3) 
+    #     # print(f"4 {x.shape}")
 
     #     ## Regression : b f (j c) -> b (j c) f -> b f j c
     #     x = x.permute(0, 2, 1).contiguous()
-    #     print(f"5 {x.shape}")
+    #     # print(f"5 {x.shape}")
     #     x = self.regression(x)
-    #     print(f"6 {x.shape}")
+    #     # print(f"6 {x.shape}")
     #     x = rearrange(x, 'b (j c) f -> b f j c', j=J).contiguous()
-    #     print(f"7 {x.shape}")
+    #     # print(f"7 {x.shape}")
 
     #     return x
 
@@ -221,6 +300,4 @@ class Model_Paper(nn.Module):
         # print(f"13 {x.shape}")
 
         return x
-
-
 

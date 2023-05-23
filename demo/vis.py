@@ -14,7 +14,7 @@ import copy
 from IPython import embed
 
 sys.path.append(os.getcwd())
-from model.mhformer import Model
+from model.mhformer import Model_Paper, Model_Proposed
 from common.camera import *
 
 import matplotlib
@@ -131,13 +131,13 @@ def showimage(ax, img):
 
 def get_pose3D(video_path, output_dir):
     args, _ = argparse.ArgumentParser().parse_known_args()
-    args.layers, args.channel, args.d_hid, args.frames = 3, 512, 1024, 81
+    args.layers, args.channel, args.d_hid, args.frames = 3, 512, 1024, 351
     args.pad = (args.frames - 1) // 2
-    args.previous_dir = 'checkpoint/0514_0116_41_81'
+    args.previous_dir = 'checkpoint/pretrained/351'
     args.n_joints, args.out_joints = 17, 17
 
     ## Reload 
-    model = Model(args).cuda()
+    model = Model_Paper(args).cuda()
 
     model_dict = model.state_dict()
     # Put the pretrained model of MHFormer in 'checkpoint/pretrained/351'
@@ -154,7 +154,7 @@ def get_pose3D(video_path, output_dir):
     keypoints = np.load(output_dir + 'input_2D/keypoints.npz', allow_pickle=True)['reconstruction']
 
     cap = cv2.VideoCapture(video_path)
-    video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    video_length = 3000 if int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) > 3000 else int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) 
 
     ## 3D
     print('\nGenerating 3D pose...')
@@ -232,6 +232,7 @@ def get_pose3D(video_path, output_dir):
         output_dir_3D = output_dir +'pose3D/'
         os.makedirs(output_dir_3D, exist_ok=True)
         plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
+        plt.close(fig)
 
     ## Save 3D keypoints
     keypoints_3d = np.asarray(keypoints_3d)
@@ -272,6 +273,7 @@ def get_pose3D(video_path, output_dir):
         output_dir_pose = output_dir +'pose/'
         os.makedirs(output_dir_pose, exist_ok=True)
         plt.savefig(output_dir_pose + str(('%04d'% i)) + '_pose.png', dpi=200, bbox_inches = 'tight')
+        plt.close(fig)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
