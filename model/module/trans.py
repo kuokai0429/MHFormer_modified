@@ -205,6 +205,9 @@ class RectifiedLinearAttention(nn.Module):
         return out
 
 class Block(nn.Module):
+    """ 
+    Transformer Block with Attention.
+    """
     def __init__(self, dim, num_heads, mlp_hidden_dim, qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
@@ -221,6 +224,9 @@ class Block(nn.Module):
         return x
     
 class RLABlock(nn.Module):
+    """ 
+    Transformer Block with Rectified Linear Attention.
+    """
     def __init__(self, dim, mlp_hidden_dim, drop=0., drop_path=0., act_layer=nn.GELU, 
                  norm_layer=nn.LayerNorm):
         super().__init__()
@@ -385,7 +391,7 @@ class Transformer(nn.Module):
                 norm_layer=norm_layer)
             for i in range(depth)])
 
-        # 2023.0517 Transformer Block with Rectified Linear Attention @Brian
+        # 2023.0517 RLABlock @Brian
         # self.blocks = nn.ModuleList([
         #     RLABlock(
         #         dim=embed_dim, 

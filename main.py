@@ -111,7 +111,7 @@ if __name__ == '__main__':
                                                   shuffle=False, num_workers=int(opt.workers), pin_memory=True)
 
     # model = Model_Paper(opt).cuda()
-    model = Model_Proposed.cuda()
+    model = Model_Proposed(opt).cuda()
 
     model_dict = model.state_dict()
     if opt.previous_dir != '':

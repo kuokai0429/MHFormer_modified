@@ -1,8 +1,57 @@
 import math
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from torch import einsum
+from einops import rearrange
 from functools import partial
 from timm.models.layers import DropPath, to_2tuple
+
+class RMSNorm(nn.Module):
+    def __init__(self, d, p=-1., eps=1e-8, bias=False):
+        """
+            Root Mean Square Layer Normalization
+        :param d: model size
+        :param p: partial RMSNorm, valid value [0, 1], default -1.0 (disabled)
+        :param eps:  epsilon value, default 1e-8
+        :param bias: whether use bias term for RMSNorm, disabled by
+            default because RMSNorm doesn't enforce re-centering invariance.
+        """
+        super(RMSNorm, self).__init__()
+
+        self.eps = eps
+        self.d = d
+        self.p = p
+        self.bias = bias
+
+        self.scale = nn.Parameter(torch.ones(d))
+        stdv = 1. / math.sqrt(d/3)
+        self.scale.data.uniform_(-stdv, stdv)
+
+        self.register_parameter("scale", self.scale)
+
+        if self.bias:
+            self.offset = nn.Parameter(torch.zeros(d))
+            self.register_parameter("offset", self.offset)
+
+    def forward(self, x):
+        if self.p < 0. or self.p > 1.:
+            norm_x = x.norm(2, dim=-1, keepdim=True)
+            d_x = self.d
+        else:
+            partial_size = int(self.d * self.p)
+            partial_x, _ = torch.split(x, [partial_size, self.d - partial_size], dim=-1)
+
+            norm_x = partial_x.norm(2, dim=-1, keepdim=True)
+            d_x = partial_size
+
+        rms_x = norm_x * d_x ** (-1. / 2)
+        x_normed = x / (rms_x + self.eps)
+
+        if self.bias:
+            return self.scale * x_normed + self.offset
+
+        return self.scale * x_normed
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -48,6 +97,40 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
+    
+class RectifiedLinearAttention(nn.Module):
+    """ Rectified Linear Attention
+    This repo contain pytorch implementation of 'Sparse Attention with Linear Units'.
+    """
+    def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0., rmsnorm=False):
+        super().__init__()
+        inner_dim = dim_head * heads
+        project_out = not (heads == 1 and dim_head == dim)
+        self.heads = heads
+        self.scale = dim_head ** -0.5
+
+        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+
+        self.norm = RMSNorm(inner_dim) if rmsnorm else nn.LayerNorm(inner_dim)
+
+        self.to_out = nn.Sequential(
+            nn.Linear(inner_dim, dim),
+            nn.Dropout(dropout)
+        ) if project_out else nn.Identity()
+
+    def forward(self, x):
+        b, n, _, h = *x.shape, self.heads
+        qkv = self.to_qkv(x).chunk(3, dim = -1)
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)
+
+        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+        attn = F.relu(dots)
+
+        out = einsum('b h i j, b h j d -> b h i d', attn, v)
+        out = rearrange(out, 'b h n d -> b n (h d)')
+
+        out =  self.to_out(self.norm(out))
+        return out
 
 class Cross_Attention(nn.Module):
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
@@ -93,6 +176,37 @@ class SHR_Block(nn.Module):
             qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
         self.attn_3 = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, \
             qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+
+        self.norm2 = norm_layer(dim * 3)
+        self.mlp = Mlp(in_features=dim * 3, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+
+    def forward(self, x_1, x_2, x_3):
+        x_1 = x_1 + self.drop_path(self.attn_1(self.norm1_1(x_1)))
+        x_2 = x_2 + self.drop_path(self.attn_2(self.norm1_2(x_2)))
+        x_3 = x_3 + self.drop_path(self.attn_3(self.norm1_3(x_3)))
+
+        x = torch.cat([x_1, x_2, x_3], dim=2)
+        x = x + self.drop_path(self.mlp(self.norm2(x)))
+
+        x_1 = x[:, :, :x.shape[2] // 3]
+        x_2 = x[:, :, x.shape[2] // 3: x.shape[2] // 3 * 2]
+        x_3 = x[:, :, x.shape[2] // 3 * 2: x.shape[2]]
+
+        return  x_1, x_2, x_3
+    
+class SHR_RLABlock(nn.Module):
+    def __init__(self, dim, mlp_hidden_dim, drop=0., drop_path=0., act_layer=nn.GELU, 
+                 norm_layer=nn.LayerNorm):
+        super().__init__()
+        self.norm1_1 = norm_layer(dim)
+        self.norm1_2 = norm_layer(dim)
+        self.norm1_3 = norm_layer(dim)
+
+        self.attn_1 = RectifiedLinearAttention(dim, rmsnorm=True)
+        self.attn_2 = RectifiedLinearAttention(dim, rmsnorm=True)
+        self.attn_3 = RectifiedLinearAttention(dim, rmsnorm=True)
 
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
 
@@ -219,10 +333,20 @@ class Transformer_Paper(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
         # Attention SHR Blocks @Paper
+        # self.SHR_blocks = nn.ModuleList([
+        #     SHR_Block(
+        #         dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
+        #         drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
+        #     for i in range(depth-1)])
+        
+        # 2023.0523 Rectified Linear Attention SHR Blocks @Brian
         self.SHR_blocks = nn.ModuleList([
-            SHR_Block(
-                dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
+            SHR_RLABlock(
+                dim=embed_dim, 
+                mlp_hidden_dim=mlp_hidden_dim, 
+                drop=drop_rate, 
+                drop_path=dpr[i], 
+                norm_layer=norm_layer)
             for i in range(depth-1)])
         
         # 2023.0515 MlpMixer SHR Blocks @Brian
