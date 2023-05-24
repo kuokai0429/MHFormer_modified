@@ -6,6 +6,7 @@
 /home/brian/下載/MHFormer_revised/checkpoint/0516_1541_20_81 : MHFormer with SHR_MixerBlock(trans_hypothesis.py). (frames=81, mlp_ratio=(0.5, 2.0)) -> p1: 5047
 /home/brian/下載/MHFormer_revised/checkpoint/0516_2257_19_81 : MHFormer with MixerBlock(trans.py). (frames=81, mlp_ratio=(0.25, 2.0)) -> p1: 4478
 /home/brian/下載/MHFormer_revised/checkpoint/0517_1255_15_81 : MHFormer with ResMLPBlock(trans.py). (frames=81, mlp_ratio=2.0) -> p1: 4474
-/home/brian/下載/MHFormer_revised/checkpoint/0517_2335_24_81 : MHFormer with RLABlock (trans.py). (frames=81) -> p1: 4438
+/home/brian/下載/MHFormer_revised/checkpoint/0517_2335_24_81 : MHFormer with ReLABlock (trans.py). (frames=81) -> p1: 4438
 /home/brian/下載/MHFormer_revised/checkpoint/0522_0212_29_81 : MHFormer with MHG[B(JC)F]+SHR[(BF)JC]+SHR[BF(JC)]+CHI[BF(JC)] ver 1. (mhformer.py, trans_hypothesis.py). (frames=81) -> p1: 4884
-/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with SHR_RLABlock(trans_hypothesis.py). (frames=81) -> p1: 
+/home/brian/下載/MHFormer_revised/checkpoint/0523_1901_30_81 : MHFormer with SHR_ReLABlock(trans_hypothesis.py). (frames=81) -> p1: 4530
+/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with ResAttBlock(trans.py). (frames=81) -> p1: 

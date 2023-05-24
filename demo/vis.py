@@ -241,6 +241,11 @@ def get_pose3D(video_path, output_dir):
         
     print('Generating 3D pose successfully!')
 
+    model_params = 0
+    for parameter in model.parameters():
+        model_params += parameter.numel()
+    print('INFO: Trainable parameter count:', model_params/1000000, 'Million')
+
     ## all
     image_dir = 'results/' 
     image_2d_dir = sorted(glob.glob(os.path.join(output_dir_2D, '*.png')))

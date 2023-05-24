@@ -196,7 +196,7 @@ class SHR_Block(nn.Module):
 
         return  x_1, x_2, x_3
     
-class SHR_RLABlock(nn.Module):
+class SHR_ReLABlock(nn.Module):
     def __init__(self, dim, mlp_hidden_dim, drop=0., drop_path=0., act_layer=nn.GELU, 
                  norm_layer=nn.LayerNorm):
         super().__init__()
@@ -333,21 +333,21 @@ class Transformer_Paper(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
         # Attention SHR Blocks @Paper
-        # self.SHR_blocks = nn.ModuleList([
-        #     SHR_Block(
-        #         dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
-        #         drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
-        #     for i in range(depth-1)])
+        self.SHR_blocks = nn.ModuleList([
+            SHR_Block(
+                dim=embed_dim, num_heads=h, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
+            for i in range(depth-1)])
         
         # 2023.0523 Rectified Linear Attention SHR Blocks @Brian
-        self.SHR_blocks = nn.ModuleList([
-            SHR_RLABlock(
-                dim=embed_dim, 
-                mlp_hidden_dim=mlp_hidden_dim, 
-                drop=drop_rate, 
-                drop_path=dpr[i], 
-                norm_layer=norm_layer)
-            for i in range(depth-1)])
+        # self.SHR_blocks = nn.ModuleList([
+        #     SHR_ReLABlock(
+        #         dim=embed_dim, 
+        #         mlp_hidden_dim=mlp_hidden_dim, 
+        #         drop=drop_rate, 
+        #         drop_path=dpr[i], 
+        #         norm_layer=norm_layer)
+        #     for i in range(depth-1)])
         
         # 2023.0515 MlpMixer SHR Blocks @Brian
         # self.SHR_blocks = nn.ModuleList([

@@ -223,7 +223,7 @@ class Block(nn.Module):
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
     
-class RLABlock(nn.Module):
+class ReLABlock(nn.Module):
     """ 
     Transformer Block with Rectified Linear Attention.
     """
@@ -391,9 +391,9 @@ class Transformer(nn.Module):
                 norm_layer=norm_layer)
             for i in range(depth)])
 
-        # 2023.0517 RLABlock @Brian
+        # 2023.0517 ReLABlock @Brian
         # self.blocks = nn.ModuleList([
-        #     RLABlock(
+        #     ReLABlock(
         #         dim=embed_dim, 
         #         mlp_hidden_dim=mlp_hidden_dim, 
         #         drop=drop_rate, 

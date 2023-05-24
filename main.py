@@ -113,6 +113,11 @@ if __name__ == '__main__':
     # model = Model_Paper(opt).cuda()
     model = Model_Proposed(opt).cuda()
 
+    model_params = 0
+    for parameter in model.parameters():
+        model_params += parameter.numel()
+    print('INFO: Trainable parameter count:', model_params/1000000, 'Million')
+
     model_dict = model.state_dict()
     if opt.previous_dir != '':
         model_paths = sorted(glob.glob(os.path.join(opt.previous_dir, '*.pth')))
