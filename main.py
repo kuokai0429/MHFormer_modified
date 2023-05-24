@@ -110,8 +110,8 @@ if __name__ == '__main__':
     test_dataloader = torch.utils.data.DataLoader(test_data, batch_size=opt.batch_size,
                                                   shuffle=False, num_workers=int(opt.workers), pin_memory=True)
 
-    # model = Model_Paper(opt).cuda()
-    model = Model_Proposed(opt).cuda()
+    model = Model_Paper(opt).cuda()
+    # model = Model_Proposed(opt).cuda()
 
     model_params = 0
     for parameter in model.parameters():
