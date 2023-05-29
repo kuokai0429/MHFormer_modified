@@ -22,7 +22,7 @@ class Model_Paper(nn.Module):
         # self.Transformer_encoder_2 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
         # self.Transformer_encoder_3 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
 
-        ## MHG [B(JC)F] @Propopsed
+        ## MHG [B(JC)F] RealFormer using ReLA @Propopsed
         self.Transformer_encoder_1 = Transformer_encoder_Proposed(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
         self.Transformer_encoder_2 = Transformer_encoder_Proposed(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
         self.Transformer_encoder_3 = Transformer_encoder_Proposed(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
@@ -115,7 +115,7 @@ class Model_Proposed(nn.Module):
         self.Transformer_encoder_2 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
         self.Transformer_encoder_3 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
 
-        ## MHG [B(JC)F] @Propopsed
+        ## MHG [B(JC)F] MHG [B(JC)F] RealFormer using ReLA @Propopsed
         # self.Transformer_encoder_1 = Transformer_encoder_Proposed(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
         # self.Transformer_encoder_2 = Transformer_encoder_Proposed(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
         # self.Transformer_encoder_3 = Transformer_encoder_Proposed(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)

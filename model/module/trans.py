@@ -169,6 +169,40 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
+
+class RectifiedLinearAttention(nn.Module):
+    """ Rectified Linear Attention
+    This repo contain pytorch implementation of 'Sparse Attention with Linear Units'.
+    """
+    def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0., rmsnorm=False):
+        super().__init__()
+        inner_dim = dim_head * heads
+        project_out = not (heads == 1 and dim_head == dim)
+        self.heads = heads
+        self.scale = dim_head ** -0.5
+
+        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+
+        self.norm = RMSNorm(inner_dim) if rmsnorm else nn.LayerNorm(inner_dim)
+
+        self.to_out = nn.Sequential(
+            nn.Linear(inner_dim, dim),
+            nn.Dropout(dropout)
+        ) if project_out else nn.Identity()
+
+    def forward(self, x):
+        b, n, _, h = *x.shape, self.heads
+        qkv = self.to_qkv(x).chunk(3, dim = -1)
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)
+
+        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+        attn = F.relu(dots)
+
+        out = einsum('b h i j, b h j d -> b h i d', attn, v)
+        out = rearrange(out, 'b h n d -> b n (h d)')
+
+        out =  self.to_out(self.norm(out))
+        return out
     
 class ResidualMultiHeadAttention(nn.Module):
     def __init__(self, d_model, num_heads, dropout):
@@ -207,10 +241,9 @@ class ResidualMultiHeadAttention(nn.Module):
         out = self.dropout(self.out_proj(context))
 
         return out, energy
-
-class RectifiedLinearAttention(nn.Module):
-    """ Rectified Linear Attention
-    This repo contain pytorch implementation of 'Sparse Attention with Linear Units'.
+    
+class ResidualRectifiedLinearAttention(nn.Module):
+    """ Residual Attention + Rectified Linear Attention.
     """
     def __init__(self, dim, heads = 8, dim_head = 64, dropout = 0., rmsnorm=False):
         super().__init__()
@@ -228,19 +261,23 @@ class RectifiedLinearAttention(nn.Module):
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
-    def forward(self, x):
+    def forward(self, x, prev):
         b, n, _, h = *x.shape, self.heads
         qkv = self.to_qkv(x).chunk(3, dim = -1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)
 
-        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
-        attn = F.relu(dots)
+        energy = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+
+        if prev is not None:
+            energy = energy + prev
+
+        attn = F.relu(energy)
 
         out = einsum('b h i j, b h j d -> b h i d', attn, v)
         out = rearrange(out, 'b h n d -> b n (h d)')
-
         out =  self.to_out(self.norm(out))
-        return out
+
+        return out, energy
 
 class Block(nn.Module):
     """ 
@@ -280,7 +317,11 @@ class ReLABlock(nn.Module):
         return x
     
 class ResABlock(nn.Module):
-    def __init__(self, dim, num_heads, mlp_hidden_dim, drop=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+    """ 
+    Transformer Block with Residual Attention.
+    """
+    def __init__(self, dim, num_heads, mlp_hidden_dim, drop=0., act_layer=nn.GELU, 
+                 norm_layer=nn.LayerNorm):
         super().__init__()
         self.attn = ResidualMultiHeadAttention(dim, num_heads, drop)
         self.ff = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
@@ -294,6 +335,33 @@ class ResABlock(nn.Module):
         residual = x
         x = self.ff(x)
         out = self.norm2(x + residual)
+        return out, prev
+    
+class ResReLABlock(nn.Module):
+    """ 
+    Transformer Block with Residual Rectified Linear Attention.
+    """
+    def __init__(self, dim, mlp_hidden_dim, drop=0., drop_path=0., act_layer=nn.GELU, 
+                 norm_layer=nn.LayerNorm):
+        super().__init__()
+        self.attn = ResidualRectifiedLinearAttention(dim, rmsnorm=True)
+        self.ff = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.norm1 = norm_layer(dim)
+        self.norm2 = norm_layer(dim)
+
+    def forward(self, x, prev=None):
+
+        residual = x
+        x, prev = self.attn(x, prev)
+        x = self.drop_path(x)
+        x = self.norm1(x + residual)
+
+        residual = x
+        x = self.ff(x)
+        x = self.drop_path(x)
+        out = self.norm2(x + residual)
+
         return out, prev
     
 class MLPMixerBlock(nn.Module):
@@ -525,12 +593,22 @@ class Transformer_Proposed(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
         # 2023.0525 Transformer Block with Residual Attention @Brian
+        # self.blocks = nn.ModuleList([
+        #     ResABlock(
+        #         dim=embed_dim, 
+        #         num_heads=h, 
+        #         mlp_hidden_dim=mlp_hidden_dim, 
+        #         drop=drop_rate, 
+        #         norm_layer=norm_layer)
+        #     for i in range(depth)])
+
+        # 2023.0530 Transformer Block with Residual Rectified Linear Attention @Brian
         self.blocks = nn.ModuleList([
-            ResABlock(
+            ResReLABlock(
                 dim=embed_dim, 
-                num_heads=h, 
                 mlp_hidden_dim=mlp_hidden_dim, 
                 drop=drop_rate, 
+                drop_path=dpr[i],
                 norm_layer=norm_layer)
             for i in range(depth)])
 
