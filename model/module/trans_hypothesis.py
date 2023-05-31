@@ -399,9 +399,9 @@ class Transformer_Proposed_1(nn.Module):
 
         norm_layer = partial(nn.LayerNorm, eps=1e-6)
 
-        self.pos_embed_1 = nn.Parameter(torch.zeros(1, 17, embed_dim))
-        self.pos_embed_2 = nn.Parameter(torch.zeros(1, 17, embed_dim))
-        self.pos_embed_3 = nn.Parameter(torch.zeros(1, 17, embed_dim))
+        self.pos_embed_1 = nn.Parameter(torch.zeros(1, length, embed_dim))
+        self.pos_embed_2 = nn.Parameter(torch.zeros(1, length, embed_dim))
+        self.pos_embed_3 = nn.Parameter(torch.zeros(1, length, embed_dim))
 
         self.pos_drop_1 = nn.Dropout(p=drop_rate)
         self.pos_drop_2 = nn.Dropout(p=drop_rate)
