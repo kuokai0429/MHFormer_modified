@@ -12,7 +12,7 @@ from common.opt import opts
 from common.utils import *
 from common.load_data_hm36 import Fusion
 from common.h36m_dataset import Human36mDataset
-from model.mhformer import Model_Paper, Model_Proposed
+from model.mhformer import Model_Paper, Model_Proposed_1, Model_Proposed_2
 
 opt = opts().parse()
 os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu
@@ -111,7 +111,8 @@ if __name__ == '__main__':
                                                   shuffle=False, num_workers=int(opt.workers), pin_memory=True)
 
     model = Model_Paper(opt).cuda()
-    # model = Model_Proposed(opt).cuda()
+    # model = Model_Proposed_1(opt).cuda()
+    # model = Model_Proposed_2(opt).cuda()
 
     model_params = 0
     for parameter in model.parameters():

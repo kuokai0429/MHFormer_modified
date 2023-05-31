@@ -389,7 +389,7 @@ class Transformer_Paper(nn.Module):
 
         return x
     
-class Transformer_Proposed(nn.Module):
+class Transformer_Proposed_1(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
         drop_path_rate = 0.20

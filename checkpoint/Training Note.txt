@@ -11,4 +11,6 @@
 /home/brian/下載/MHFormer_revised/checkpoint/0523_1901_30_81 : MHFormer with SHR_ReLABlock(main.py, trans_hypothesis.py). (frames=81) -> p1: 4530
 /home/brian/下載/MHFormer_revised/checkpoint/0525_0043_58_81 : MHFormer with ResABlock(mhformer.py, trans.py). (frames=81) -> p1: 4446
 /home/brian/下載/MHFormer_revised/checkpoint/0530_0209_18_81 : MHFormer with ResReLABlock (mhformer.py, trans.py). (frames=81) -> p1: 
+
+/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG_DCT[B(JC)F]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans_hypothesis.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG[(BF)JC+B(JC)F]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans_hypothesis.py). (frames=81) -> p1: 

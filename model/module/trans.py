@@ -577,7 +577,7 @@ class Transformer_Paper(nn.Module):
 
         return x
 
-class Transformer_Proposed(nn.Module):
+class Transformer_Proposed_1(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
         drop_path_rate = 0.2
@@ -593,24 +593,24 @@ class Transformer_Proposed(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
         # 2023.0525 Transformer Block with Residual Attention @Brian
-        # self.blocks = nn.ModuleList([
-        #     ResABlock(
-        #         dim=embed_dim, 
-        #         num_heads=h, 
-        #         mlp_hidden_dim=mlp_hidden_dim, 
-        #         drop=drop_rate, 
-        #         norm_layer=norm_layer)
-        #     for i in range(depth)])
-
-        # 2023.0530 Transformer Block with Residual Rectified Linear Attention @Brian
         self.blocks = nn.ModuleList([
-            ResReLABlock(
+            ResABlock(
                 dim=embed_dim, 
+                num_heads=h, 
                 mlp_hidden_dim=mlp_hidden_dim, 
                 drop=drop_rate, 
-                drop_path=dpr[i],
                 norm_layer=norm_layer)
             for i in range(depth)])
+
+        # 2023.0530 Transformer Block with Residual Rectified Linear Attention @Brian
+        # self.blocks = nn.ModuleList([
+        #     ResReLABlock(
+        #         dim=embed_dim, 
+        #         mlp_hidden_dim=mlp_hidden_dim, 
+        #         drop=drop_rate, 
+        #         drop_path=dpr[i],
+        #         norm_layer=norm_layer)
+        #     for i in range(depth)])
 
         self.norm = norm_layer(embed_dim)
 
