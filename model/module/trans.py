@@ -528,6 +528,7 @@ class PoseFormerV2_MixedBlock(nn.Module):
         x1 = x[:, :f//2] + self.drop_path(self.mlp1(self.norm2(x[:, :f//2])))
         x2 = x[:, f//2:] + self.drop_path(self.mlp2(self.norm3(x[:, f//2:])))
         return torch.cat((x1, x2), dim=1)
+
     
 class Transformer_Paper(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
@@ -622,6 +623,7 @@ class Transformer_Paper(nn.Module):
 
         return x
 
+
 class Transformer_Proposed_1(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
@@ -670,6 +672,7 @@ class Transformer_Proposed_1(nn.Module):
 
         x = self.norm(x)
         return x
+
 
 class Transformer_Proposed_2(nn.Module):
     def __init__(self, num_frame=81, num_joints=17, in_chans=2,
@@ -782,3 +785,10 @@ class Transformer_Proposed_2(nn.Module):
 
         x = self.head(x).view(b, 1, p, -1)
         return x
+    
+
+class Transformer_Proposed_3(nn.Module):
+    """ 
+        Reference: 
+            DSTformer model from MotionBERT.
+    """

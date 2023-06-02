@@ -46,7 +46,20 @@ def step(split, opt, actions, dataLoader, model, optimizer=None, epoch=None):
         out_target[:, :, 0] = 0
 
         if split == 'train':
-            loss = mpjpe_cal(output_3D, out_target)
+
+            # MPJPE Loss @Paper
+            # loss = mpjpe_cal(output_3D, out_target)
+
+            # WMPJPE Loss @Brian
+            joint_weights = torch.tensor([1, 1, 2.5, 2.5, 1, 2.5, 2.5, 1, 1, 1, 1.5, 1.5, 4, 4, 1.5, 4, 4]).cuda()
+            loss = weighted_mpjpe_cal(output_3D, out_target, joint_weights)
+
+            # Temporal Consistency Loss @Brian
+            
+            # Symmetry Penalty Loss @Brian
+
+            # MPJVE Loss @Brian
+
 
             N = input_2D.size(0)
             loss_all['loss'].update(loss.detach().cpu().numpy() * N, N)
@@ -110,9 +123,9 @@ if __name__ == '__main__':
     test_dataloader = torch.utils.data.DataLoader(test_data, batch_size=opt.batch_size,
                                                   shuffle=False, num_workers=int(opt.workers), pin_memory=True)
 
-    # model = Model_Paper(opt).cuda()
+    model = Model_Paper(opt).cuda()
     # model = Model_Proposed_1(opt).cuda()
-    model = Model_Proposed_2(opt).cuda()
+    # model = Model_Proposed_2(opt).cuda()
 
     model_params = 0
     for parameter in model.parameters():

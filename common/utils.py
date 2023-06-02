@@ -1,3 +1,5 @@
+# 2023.0601 @Brian
+
 import torch
 import numpy as np
 import hashlib
@@ -11,8 +13,20 @@ def deterministic_random(min_value, max_value, data):
 
 
 def mpjpe_cal(predicted, target):
+    """
+    Mean per-joint position error (i.e. mean Euclidean distance),
+    often referred to as "Protocol #1" in many papers.
+    """
     assert predicted.shape == target.shape
     return torch.mean(torch.norm(predicted - target, dim=len(target.shape) - 1))
+
+def weighted_mpjpe_cal(predicted, target, w):
+    """
+    Weighted mean per-joint position error (i.e. mean Euclidean distance)
+    """
+    assert predicted.shape == target.shape
+    # assert w.shape[0] == predicted.shape[0]
+    return torch.mean(w * torch.norm(predicted - target, dim=len(target.shape)-1))
 
 
 def test_calculation(predicted, target, action, error_sum, data_type, subject):
@@ -74,6 +88,10 @@ def mpjpe_by_action_p2(predicted, target, action, action_error_sum):
 
 
 def p_mpjpe(predicted, target):
+    """
+    Pose error: MPJPE after rigid alignment (scale, rotation, and translation),
+    often referred to as "Protocol #2" in many papers.
+    """
     assert predicted.shape == target.shape
 
     muX = np.mean(target, axis=1, keepdims=True)
