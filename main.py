@@ -47,19 +47,32 @@ def step(split, opt, actions, dataLoader, model, optimizer=None, epoch=None):
 
         if split == 'train':
 
-            # MPJPE Loss @Paper
-            # loss = mpjpe_cal(output_3D, out_target)
+            ## MPJPE Loss @Paper
+            mpjpe_loss = mpjpe_cal(output_3D, out_target)
 
-            # WMPJPE Loss @Brian
+            ## WMPJPE Loss @Brian
+            # joint_weights = torch.tensor([1, 1, 2.5, 2.5, 1, 2.5, 2.5, 1, 1, 1, 1.5, 1.5, 4, 4, 1.5, 4, 4]).cuda()
+            # wmpjpe_loss = weighted_mpjpe_cal(output_3D, out_target, joint_weights)
+
+            ## MPJVE Loss @Brian
+            # mpjve_loss = mpjve_cal(output_3D, out_target, axis=1)
+
+            ## Temporal Consistency Loss @Brian
             joint_weights = torch.tensor([1, 1, 2.5, 2.5, 1, 2.5, 2.5, 1, 1, 1, 1.5, 1.5, 4, 4, 1.5, 4, 4]).cuda()
-            loss = weighted_mpjpe_cal(output_3D, out_target, joint_weights)
-
-            # Temporal Consistency Loss @Brian
+            tce_loss = tce_cal(output_3D, joint_weights)
             
-            # Symmetry Penalty Loss @Brian
+            ## Symmetry Penalty Loss @Brian
+            # sym_loss = sp_cal(args.dataset, args.keypoints, predicted_3d_pos)
 
-            # MPJVE Loss @Brian
+            ####################################
 
+            ## Total Loss Function @Paper
+            # loss = mpjpe_loss
+            
+            ## Total Loss function @Brian
+            loss = mpjpe_loss + 0.5 * tce_loss
+
+            ####################################
 
             N = input_2D.size(0)
             loss_all['loss'].update(loss.detach().cpu().numpy() * N, N)

@@ -14,8 +14,8 @@
 /home/brian/下載/MHFormer_revised/checkpoint/0530_0209_18_81 : MHFormer with ResReLABlock (mhformer.py, trans.py). (frames=81) -> p1: 4441
 /home/brian/下載/MHFormer_revised/checkpoint/0601_0032_55_81 : MHFormer with MHG[(BF)JC+B(JC)F]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans.py). (frames=81) -> p1: 4568
 /home/brian/下載/MHFormer_revised/checkpoint/0602_1620_52_81 : MHFormer from Paper with WMPJPE Loss (main.py, utils.py). (frames=81) -> p1: 
+/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + 0.5 * TC Loss] (main.py, utils.py). (frames=81) -> p1:
 
-/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with TCLoss (main.py, utils.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with Symmetry Loss (main.py, utils.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG_DCT[B(JC)F]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans.py). (frames=81) -> p1: 
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG[B(JC)F]+SHR[(BF)JC]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans_hypothesis.py). -> p1: 

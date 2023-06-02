@@ -20,6 +20,8 @@ def mpjpe_cal(predicted, target):
     assert predicted.shape == target.shape
     return torch.mean(torch.norm(predicted - target, dim=len(target.shape) - 1))
 
+
+# 2023.0602 @Brian
 def weighted_mpjpe_cal(predicted, target, w):
     """
     Weighted mean per-joint position error (i.e. mean Euclidean distance)
@@ -27,6 +29,55 @@ def weighted_mpjpe_cal(predicted, target, w):
     assert predicted.shape == target.shape
     # assert w.shape[0] == predicted.shape[0]
     return torch.mean(w * torch.norm(predicted - target, dim=len(target.shape)-1))
+
+
+# 2023.0602 @Brian
+def mpjve_cal(predicted, target, axis=0):
+    """
+    Mean per-joint velocity error (i.e. mean Euclidean distance of the 1st derivative)
+    """
+    assert predicted.shape == target.shape
+
+    velocity_predicted = np.diff(predicted, axis=axis)
+    velocity_target = np.diff(target, axis=axis)
+    
+    return np.mean(np.linalg.norm(velocity_predicted - velocity_target, axis=len(target.shape)-1))
+
+
+# 2023.0602 @Brian
+def tce_cal(predicted, w):
+    """
+    Temporal Consistency Loss.
+    """
+    dif_seq = predicted[:,1:,:,:] - predicted[:,:-1,:,:]
+    weights_joints = torch.ones_like(dif_seq).cuda()
+    weights_mul = w
+    assert weights_mul.shape[0] == weights_joints.shape[-2]
+
+    weights_joints = torch.mul(weights_joints.permute(0,1,3,2),weights_mul).permute(0,1,3,2)
+    return torch.mean(torch.multiply(weights_joints, torch.square(dif_seq)))
+
+
+# 2023.0603 @Brian
+def sp_cal(dataset,keypoints,pred_out):
+    """
+    Get penalty for the symmetry of human body.
+    """
+    loss_sym = 0
+    if dataset == 'h36m':
+        if keypoints.startswith('hr'):
+            left_bone = [(0,4),(4,5),(5,6),(8,10),(10,11),(11,12)]
+            right_bone = [(0,1),(1,2),(2,3),(8,13),(13,14),(14,15)]
+        else:
+            left_bone = [(0,4),(4,5),(5,6),(8,11),(11,12),(12,13)]
+            right_bone = [(0,1),(1,2),(2,3),(8,14),(14,15),(15,16)]
+        for (i_left,j_left),(i_right,j_right) in zip(left_bone,right_bone):
+            left_part = pred_out[:,:,i_left]-pred_out[:,:,j_left]
+            right_part = pred_out[:, :, i_right] - pred_out[:, :, j_right]
+            loss_sym += torch.mean(torch.abs(torch.norm(left_part, dim=-1) - torch.norm(right_part, dim=-1)))
+    elif dataset.startswith('STB'):
+        loss_sym = 0
+    return 0.01*loss_sym
 
 
 def test_calculation(predicted, target, action, error_sum, data_type, subject):
@@ -60,6 +111,7 @@ def mpjpe_by_action_p1(predicted, target, action, action_error_sum):
             action_error_sum[action_name]['p1'].update(dist[i].item(), 1)
             
     return action_error_sum
+
 
 def mpjpe_by_action_p2(predicted, target, action, action_error_sum):
     assert predicted.shape == target.shape
