@@ -15,11 +15,13 @@
 /home/brian/下載/MHFormer_revised/checkpoint/0601_0032_55_81 : MHFormer with MHG[(BF)JC+B(JC)F]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans.py). (frames=81) -> p1: 4568
 /home/brian/下載/MHFormer_revised/checkpoint/0602_1620_52_81 : MHFormer from Paper with WMPJPE Loss (main.py, utils.py). (frames=81) -> p1: 4498
 /home/brian/下載/MHFormer_revised/checkpoint/0603_0010_44_81 : MHFormer from Paper with [MPJPE Loss + 0.5 * TC Loss] (main.py, utils.py). (frames=81) -> p1: 4487
-/home/brian/下載/MHFormer_revised/checkpoint/0603_1304_06_81 : MHFormer from Paper with [MPJPE Loss + 2 * MPJVE Loss] (main.py, utils.py). (frames=81) -> p1: 
+/home/brian/下載/MHFormer_revised/checkpoint/0603_1559_56_81 : MHFormer from Paper with [MPJPE Loss + 2 * MPJVE Loss] (main.py, utils.py). (frames=81) -> p1: 4733
+/home/brian/下載/MHFormer_revised/checkpoint/0604_0044_38_81 : MHFormer from Paper with [MPJPE Loss + 0.5 * TC Loss + 2 * MPJVE Loss] (main.py, utils.py). (frames=81) -> p1:
 
-/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + 0.5 * TC Loss + 2 * MPJVE Loss] (main.py, utils.py). (frames=81) -> p1:
+/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + 0.5 * NMPJPE Loss + 20 * MPJVE Loss] (main.py, utils.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + 0.5 * Symmetry Loss] (main.py, utils.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + 0.5 * Angle Loss] (main.py, utils.py). (frames=81) -> p1:
+/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG_DST[B(JC)F]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG_DCT[B(JC)F]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans.py). (frames=81) -> p1: 
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG[B(JC)F]+SHR[(BF)JC]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans_hypothesis.py). -> p1: 
                                                (frames=81, Transformer_hypothesis_Proposed_1(args.layers, 32, 32*2, length=17)) 

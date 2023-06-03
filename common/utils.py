@@ -1,6 +1,8 @@
 # 2023.0601 @Brian
 
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 import hashlib
 from torch.autograd import Variable
@@ -38,10 +40,28 @@ def mpjve_cal(predicted, target, axis=0):
     """
     assert predicted.shape == target.shape
 
-    velocity_predicted = np.diff(predicted.detach().cpu().numpy(), axis=axis)
-    velocity_target = np.diff(target.detach().cpu().numpy(), axis=axis)
+    if predicted.shape[1] <= 1:
+        return torch.FloatTensor(1).fill_(0.)[0].to(predicted.device)
     
-    return np.mean(np.linalg.norm(velocity_predicted - velocity_target, axis=len(target.shape)-1))
+    velocity_predicted = predicted[:,1:] - predicted[:,:-1]
+    velocity_target = target[:,1:] - target[:,:-1]
+
+    return torch.mean(torch.norm(velocity_predicted - velocity_target, dim=-1))
+
+
+# 2023.0603 @Brian
+def normalized_mpjpe_cal(predicted, target):
+    """
+    Normalized MPJPE (scale only), adapted from:
+    https://github.com/hrhodin/UnsupervisedGeometryAwareRepresentationLearning/blob/master/losses/poses.py
+    """
+    assert predicted.shape == target.shape
+    
+    norm_predicted = torch.mean(torch.sum(predicted**2, dim=3, keepdim=True), dim=2, keepdim=True)
+    norm_target = torch.mean(torch.sum(target*predicted, dim=3, keepdim=True), dim=2, keepdim=True)
+    scale = norm_target / norm_predicted
+
+    return mpjpe_cal(scale * predicted, target)
 
 
 # 2023.0602 @Brian
@@ -64,20 +84,75 @@ def sp_cal(dataset,keypoints,pred_out):
     Get penalty for the symmetry of human body.
     """
     loss_sym = 0
+
     if dataset == 'h36m':
+
         if keypoints.startswith('hr'):
             left_bone = [(0,4),(4,5),(5,6),(8,10),(10,11),(11,12)]
             right_bone = [(0,1),(1,2),(2,3),(8,13),(13,14),(14,15)]
         else:
             left_bone = [(0,4),(4,5),(5,6),(8,11),(11,12),(12,13)]
             right_bone = [(0,1),(1,2),(2,3),(8,14),(14,15),(15,16)]
+
         for (i_left,j_left),(i_right,j_right) in zip(left_bone,right_bone):
             left_part = pred_out[:,:,i_left]-pred_out[:,:,j_left]
             right_part = pred_out[:, :, i_right] - pred_out[:, :, j_right]
             loss_sym += torch.mean(torch.abs(torch.norm(left_part, dim=-1) - torch.norm(right_part, dim=-1)))
+
     elif dataset.startswith('STB'):
         loss_sym = 0
-    return 0.01*loss_sym
+
+    return 0.01 * loss_sym
+
+
+# 2023.0603 @Brian
+def get_angles(x):
+    '''
+    Input: (N, T, 17, 3)
+    Output: (N, T, 16)
+    '''
+    limbs_id = [[0,1], [1,2], [2,3],
+         [0,4], [4,5], [5,6],
+         [0,7], [7,8], [8,9], [9,10],
+         [8,11], [11,12], [12,13],
+         [8,14], [14,15], [15,16]
+        ]
+    angle_id = [[ 0,  3],
+                [ 0,  6],
+                [ 3,  6],
+                [ 0,  1],
+                [ 1,  2],
+                [ 3,  4],
+                [ 4,  5],
+                [ 6,  7],
+                [ 7, 10],
+                [ 7, 13],
+                [ 8, 13],
+                [10, 13],
+                [ 7,  8],
+                [ 8,  9],
+                [10, 11],
+                [11, 12],
+                [13, 14],
+                [14, 15] ]
+    eps = 1e-7
+    limbs = x[:,:,limbs_id,:]
+    limbs = limbs[:,:,:,0,:]-limbs[:,:,:,1,:]
+    angles = limbs[:,:,angle_id,:]
+    angle_cos = F.cosine_similarity(angles[:,:,:,0,:], angles[:,:,:,1,:], dim=-1)
+
+    return torch.acos(angle_cos.clamp(-1+eps, 1-eps)) 
+
+
+# 2023.0603 @Brian
+def ae_cal(x, gt):
+    '''
+    Angle Loss.
+    '''
+    limb_angles_x = get_angles(x)
+    limb_angles_gt = get_angles(gt)
+
+    return nn.L1Loss()(limb_angles_x, limb_angles_gt)
 
 
 def test_calculation(predicted, target, action, error_sum, data_type, subject):

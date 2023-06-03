@@ -57,12 +57,18 @@ def step(split, opt, actions, dataLoader, model, optimizer=None, epoch=None):
             ## MPJVE Loss @Brian
             mpjve_loss = mpjve_cal(output_3D, out_target, axis=1)
 
+            ## NMPJPE Loss @Brian
+            # nmpjpe_loss = normalized_mpjpe_cal(output_3D, out_target)
+
             ## Temporal Consistency Loss @Brian
-            # joint_weights = torch.tensor([1, 1, 2.5, 2.5, 1, 2.5, 2.5, 1, 1, 1, 1.5, 1.5, 4, 4, 1.5, 4, 4]).cuda()
-            # tce_loss = tce_cal(output_3D, joint_weights)
+            joint_weights = torch.tensor([1, 1, 2.5, 2.5, 1, 2.5, 2.5, 1, 1, 1, 1.5, 1.5, 4, 4, 1.5, 4, 4]).cuda()
+            tce_loss = tce_cal(output_3D, joint_weights)
             
             ## Symmetry Penalty Loss @Brian
-            # sym_loss = sp_cal(args.dataset, args.keypoints, predicted_3d_pos)
+            # sp_loss = sp_cal(args.dataset, args.keypoints, predicted_3d_pos)
+
+            ## Angle Loss @Brian
+            # ae_loss = ae_cal()
 
             ####################################
 
@@ -70,7 +76,7 @@ def step(split, opt, actions, dataLoader, model, optimizer=None, epoch=None):
             # loss = mpjpe_loss
             
             ## Total Loss function @Brian
-            loss = mpjpe_loss + 2 * mpjve_loss
+            loss = mpjpe_loss + 0.5 * tce_loss + 2.0 * mpjve_loss
 
             ####################################
 
