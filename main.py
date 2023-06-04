@@ -76,7 +76,7 @@ def step(split, opt, actions, dataLoader, model, optimizer=None, epoch=None):
             # loss = mpjpe_loss
             
             ## Total Loss function @Brian
-            loss = mpjpe_loss + 0.5 * nmpjpe_loss
+            loss = mpjpe_loss + 1.0 * nmpjpe_loss
 
             ####################################
 

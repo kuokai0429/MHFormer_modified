@@ -17,8 +17,10 @@
 /home/brian/下載/MHFormer_revised/checkpoint/0603_0010_44_81 : MHFormer from Paper with [MPJPE Loss + 0.5 * TC Loss] (main.py, utils.py). (frames=81) -> p1: 4487
 /home/brian/下載/MHFormer_revised/checkpoint/0603_1559_56_81 : MHFormer from Paper with [MPJPE Loss + 2 * MPJVE Loss] (main.py, utils.py). (frames=81) -> p1: 4733
 /home/brian/下載/MHFormer_revised/checkpoint/0604_0044_38_81 : MHFormer from Paper with [MPJPE Loss + 0.5 * TC Loss + 2 * MPJVE Loss] (main.py, utils.py). (frames=81) -> p1: 4748
-/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + 0.5 * NMPJPE Loss] (main.py, utils.py). (frames=81) -> p1:
+/home/brian/下載/MHFormer_revised/checkpoint/0604_1617_30_81 : MHFormer from Paper with [MPJPE Loss + 0.5 * NMPJPE Loss] (main.py, utils.py). (frames=81) -> p1: 4430
+/home/brian/下載/MHFormer_revised/checkpoint/0605_0053_11_81 : MHFormer from Paper with [MPJPE Loss + NMPJPE Loss] (main.py, utils.py). (frames=81) -> p1:
 
+/home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + PMPJPE Loss] (main.py, utils.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + 0.5 * Symmetry Loss] (main.py, utils.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + 0.5 * Angle Loss] (main.py, utils.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG_DST[B(JC)F]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans.py). (frames=81) -> p1:
