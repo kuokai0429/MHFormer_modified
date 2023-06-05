@@ -112,7 +112,7 @@ def showimage(ax, img):
     ax.imshow(img)
 
 
-def get_pose3D(keypoints_3d_pred, keypoints_3d_gt, output_dir):
+def get_pose3D(keypoints_3d_gt, keypoints_3d_mhformer, keypoints_3d_poseformer, output_dir):
 
     if os.path.exists(output_dir) and os.path.isdir(output_dir):
         shutil.rmtree(output_dir)
@@ -138,14 +138,14 @@ def get_pose3D(keypoints_3d_pred, keypoints_3d_gt, output_dir):
         plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
         plt.close(fig)
 
-    print('\nGenerating Predicted 3D pose...')
+    print('\nGenerating MHFormer Predicted 3D pose...')
 
-    for i in tqdm(range(len(keypoints_3d_pred[:]))):
+    for i in tqdm(range(len(keypoints_3d_mhformer[:]))):
         
         # Rotate vector(s) v about the rotation described by quaternion(s) q (Quaternion-derived rotation matrix): https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
         rot = [0.0, 0.0, 0.0, 0.0]
         rot = np.array(rot, dtype='float32')
-        post_out = camera_to_world(keypoints_3d_pred[i], R=rot, t=0)
+        post_out = camera_to_world(keypoints_3d_mhformer[i], R=rot, t=0)
         post_out[:, 2] -= np.min(post_out[:, 2])
 
         fig = plt.figure( figsize=(9.6, 5.4))
@@ -158,6 +158,27 @@ def get_pose3D(keypoints_3d_pred, keypoints_3d_gt, output_dir):
         os.makedirs(output_dir_3D, exist_ok=True)
         plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
         plt.close(fig)
+
+    print('\nGenerating PoseFormer Predicted 3D pose...')
+
+    # for i in tqdm(range(len(keypoints_3d_pred[:]))):
+        
+    #     # Rotate vector(s) v about the rotation described by quaternion(s) q (Quaternion-derived rotation matrix): https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+    #     rot = [0.0, 0.0, 0.0, 0.0]
+    #     rot = np.array(rot, dtype='float32')
+    #     post_out = camera_to_world(keypoints_3d_pred[i], R=rot, t=0)
+    #     post_out[:, 2] -= np.min(post_out[:, 2])
+
+    #     fig = plt.figure( figsize=(9.6, 5.4))
+    #     gs = gridspec.GridSpec(1, 1)
+    #     gs.update(wspace=-0.00, hspace=0.05) 
+    #     ax = plt.subplot(gs[0], projection='3d')
+    #     show3Dpose( post_out, ax)
+
+    #     output_dir_3D = output_dir +'Predicted_pose3D/'
+    #     os.makedirs(output_dir_3D, exist_ok=True)
+    #     plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
+    #     plt.close(fig)
         
     print('Generating 3D pose successfully!')
 
@@ -223,10 +244,15 @@ if __name__ == "__main__":
 
     # Predicted (MHFormer) 
     data = np.load(f'demo/output/{args.subject}_{args.action}/keypoints_3d.npz', allow_pickle=True)
-    predicted = torch.Tensor(data['reconstruction'])
-    # print(len(predicted))
+    predicted_mhf = torch.Tensor(data['reconstruction'])
+    # print(len(predicted_mhf))
 
-    get_pose3D(predicted, target, output_dir)
+    # Predicted (PoseFormer) 
+    data = np.load(f'demo/output/{args.subject}_{args.action}/keypoints_3d.npz', allow_pickle=True)
+    predicted_pf = torch.Tensor(data['reconstruction'])
+    # print(len(predicted_pf))
+
+    get_pose3D(target, predicted_mhf, predicted_pf, output_dir)
     # img2video(video_path, output_dir)
     print('Generating demo successful!')
     
