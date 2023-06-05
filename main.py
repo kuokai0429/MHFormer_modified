@@ -54,6 +54,9 @@ def step(split, opt, actions, dataLoader, model, optimizer=None, epoch=None):
             # joint_weights = torch.tensor([1, 1, 2.5, 2.5, 1, 2.5, 2.5, 1, 1, 1, 1.5, 1.5, 4, 4, 1.5, 4, 4]).cuda()
             # wmpjpe_loss = weighted_mpjpe_cal(output_3D, out_target, joint_weights)
 
+            ## PMPJPE Loss @Brian
+            # pmpjpe_loss = p_mpjpe_cal(output_3D, out_target)
+
             ## MPJVE Loss @Brian
             # mpjve_loss = mpjve_cal(output_3D, out_target, axis=1)
 
@@ -76,7 +79,7 @@ def step(split, opt, actions, dataLoader, model, optimizer=None, epoch=None):
             # loss = mpjpe_loss
             
             ## Total Loss function @Brian
-            loss = mpjpe_loss + 1.0 * nmpjpe_loss
+            loss = mpjpe_loss + 0.5 * nmpjpe_loss
 
             ####################################
 

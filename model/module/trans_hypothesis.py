@@ -7,6 +7,7 @@ from einops import rearrange
 from functools import partial
 from timm.models.layers import DropPath, to_2tuple
 
+# @Brian
 class RMSNorm(nn.Module):
     def __init__(self, d, p=-1., eps=1e-8, bias=False):
         """
@@ -97,7 +98,8 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
-    
+
+# @Brian    
 class RectifiedLinearAttention(nn.Module):
     """ Rectified Linear Attention
     This repo contain pytorch implementation of 'Sparse Attention with Linear Units'.
@@ -195,7 +197,8 @@ class SHR_Block(nn.Module):
         x_3 = x[:, :, x.shape[2] // 3 * 2: x.shape[2]]
 
         return  x_1, x_2, x_3
-    
+
+# @Brian    
 class SHR_ReLABlock(nn.Module):
     def __init__(self, dim, mlp_hidden_dim, drop=0., drop_path=0., act_layer=nn.GELU, 
                  norm_layer=nn.LayerNorm):
@@ -226,7 +229,8 @@ class SHR_ReLABlock(nn.Module):
         x_3 = x[:, :, x.shape[2] // 3 * 2: x.shape[2]]
 
         return  x_1, x_2, x_3
-    
+
+# @Brian    
 class SHR_MLPMixerBlock(nn.Module):
     def __init__(self,
             dim,
@@ -388,7 +392,8 @@ class Transformer_Paper(nn.Module):
         x = self.norm(x)
 
         return x
-    
+
+# @Brian    
 class Transformer_Proposed_1(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()

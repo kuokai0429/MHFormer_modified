@@ -33,6 +33,20 @@ def weighted_mpjpe_cal(predicted, target, w):
     return torch.mean(w * torch.norm(predicted - target, dim=len(target.shape)-1))
 
 
+# 2023.0605 @Brian
+def p_mpjpe_cal(predicted, target):
+    """
+    Pose error: MPJPE after rigid alignment (scale, rotation, and translation),
+    often referred to as "Protocol #2" in many papers.
+    """
+    assert predicted.shape == target.shape
+
+    pred = predicted.detach().cpu().numpy().reshape(-1, predicted.shape[-2], predicted.shape[-1])
+    gt = target.detach().cpu().numpy().reshape(-1, target.shape[-2], target.shape[-1])
+
+    return torch.mean(torch.norm(torch.Tensor(p_mpjpe(pred, gt)))).cuda()
+
+
 # 2023.0602 @Brian
 def mpjve_cal(predicted, target, axis=0):
     """

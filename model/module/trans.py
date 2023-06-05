@@ -11,6 +11,8 @@ from einops.layers.torch import Rearrange
 from functools import partial
 from timm.models.layers import DropPath, LayerNorm2d, to_2tuple
 
+
+# @Brian
 class StarReLU(nn.Module):
     """
     StarReLU: s * relu(x) ** 2 + b
@@ -33,7 +35,9 @@ class StarReLU(nn.Module):
 
     def forward(self, x):
         return self.scale * self.relu(x) ** 2 + self.bias
-    
+
+
+# @Brian
 class Scale(nn.Module):
     """
     Scale vector by element multiplications.
@@ -46,7 +50,9 @@ class Scale(nn.Module):
 
     def forward(self, x):
         return x * self.scale.view(self.shape)
-    
+
+
+# @Brian
 class Affine(nn.Module):
     def __init__(self, dim):
         super().__init__()
@@ -55,7 +61,9 @@ class Affine(nn.Module):
 
     def forward(self, x):
         return torch.addcmul(self.beta, self.alpha, x)
-    
+
+
+# @Brian
 class RMSNorm(nn.Module):
     def __init__(self, d, p=-1., eps=1e-8, bias=False):
         """
@@ -102,6 +110,8 @@ class RMSNorm(nn.Module):
 
         return self.scale * x_normed
 
+
+# @Brian
 class PreNorm(nn.Module):
     def __init__(self, dim, fn):
         super().__init__()
@@ -111,6 +121,8 @@ class PreNorm(nn.Module):
     def forward(self, x, **kwargs):
         return self.fn(self.norm(x), **kwargs)
 
+
+# @Paper
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -128,7 +140,9 @@ class Mlp(nn.Module):
         x = self.fc2(x)
         x = self.drop(x)
         return x
-    
+
+
+# @Brian
 class FreqMlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -149,7 +163,9 @@ class FreqMlp(nn.Module):
         x = self.drop(x)
         x = dct.idct(x.permute(0, 2, 1)).permute(0, 2, 1).contiguous()
         return x
-    
+
+
+# @Brian
 class Pooling(nn.Module):
     """
     Implementation of pooling for PoolFormer: https://arxiv.org/abs/2111.11418
@@ -164,6 +180,8 @@ class Pooling(nn.Module):
         y = self.pool(x)
         return y - x
 
+
+# @Paper
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
         super().__init__()
@@ -192,6 +210,8 @@ class Attention(nn.Module):
         x = self.proj_drop(x)
         return x
 
+
+# @Brian
 class RectifiedLinearAttention(nn.Module):
     """ Rectified Linear Attention
     This repo contain pytorch implementation of 'Sparse Attention with Linear Units'.
@@ -225,7 +245,9 @@ class RectifiedLinearAttention(nn.Module):
 
         out =  self.to_out(self.norm(out))
         return out
-    
+
+
+# @Brian
 class ResidualAttention(nn.Module):
     def __init__(self, d_model, num_heads, dropout):
         d_head, remainder = divmod(d_model, num_heads)
@@ -263,7 +285,9 @@ class ResidualAttention(nn.Module):
         out = self.dropout(self.out_proj(context))
 
         return out, energy
-    
+
+
+# @Brian
 class ResidualRectifiedLinearAttention(nn.Module):
     """ Residual Attention + Rectified Linear Attention.
     """
@@ -301,6 +325,8 @@ class ResidualRectifiedLinearAttention(nn.Module):
 
         return out, energy
 
+
+# @Paper
 class Block(nn.Module):
     """ 
     Transformer Block with Attention.
@@ -319,7 +345,9 @@ class Block(nn.Module):
         x = x + self.drop_path(self.attn(self.norm1(x)))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
-    
+
+
+# @Brian
 class ReLABlock(nn.Module):
     """ 
     Transformer Block with Rectified Linear Attention.
@@ -337,7 +365,9 @@ class ReLABlock(nn.Module):
         x = x + self.drop_path(self.attn(self.norm1(x)))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
-    
+
+
+# @Brian
 class ResABlock(nn.Module):
     """ 
     Transformer Block with Residual Attention.
@@ -358,7 +388,9 @@ class ResABlock(nn.Module):
         x = self.ff(x)
         out = self.norm2(x + residual)
         return out, prev
-    
+
+
+# @Brian
 class ResReLABlock(nn.Module):
     """ 
     Transformer Block with Residual Rectified Linear Attention.
@@ -385,7 +417,9 @@ class ResReLABlock(nn.Module):
         out = self.norm2(x + residual)
 
         return out, prev
-    
+
+
+# @Brian
 class MLPMixerBlock(nn.Module):
     """ Residual Block w/ token mixing and channel MLPs
     Based on: 'MLP-Mixer: An all-MLP Architecture for Vision' - https://arxiv.org/abs/2105.01601
@@ -416,6 +450,8 @@ class MLPMixerBlock(nn.Module):
         x = x + self.drop_path(self.mlp_channels(self.norm2(x)))
         return x
 
+
+# @Brian
 class ResMLPBlock(nn.Module):
     """ Residual MLP block w/ LayerScale and Affine 'norm'
 
@@ -448,6 +484,8 @@ class ResMLPBlock(nn.Module):
         x = x + self.drop_path(self.ls2 * self.mlp_channels(self.norm2(x)))
         return x
 
+
+# @Brian
 class MetaFormerBlock(nn.Module):
     """
     Implementation of one MetaFormer block.
@@ -505,7 +543,9 @@ class MetaFormerBlock(nn.Module):
                 )
             )
         return x
-    
+
+
+# @Brian    
 class PoseFormerV2_MixedBlock(nn.Module):
 
     def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
@@ -529,7 +569,8 @@ class PoseFormerV2_MixedBlock(nn.Module):
         x2 = x[:, f//2:] + self.drop_path(self.mlp2(self.norm3(x[:, f//2:])))
         return torch.cat((x1, x2), dim=1)
 
-    
+
+# @Brian
 class Transformer_Paper(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
@@ -624,6 +665,7 @@ class Transformer_Paper(nn.Module):
         return x
 
 
+# @Brian
 class Transformer_Proposed_1(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
@@ -640,24 +682,24 @@ class Transformer_Proposed_1(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
 
         # 2023.0525 Transformer Block with Residual Attention @Brian
-        self.blocks = nn.ModuleList([
-            ResABlock(
-                dim=embed_dim, 
-                num_heads=h, 
-                mlp_hidden_dim=mlp_hidden_dim, 
-                drop=drop_rate, 
-                norm_layer=norm_layer)
-            for i in range(depth)])
-
-        # 2023.0530 Transformer Block with Residual Rectified Linear Attention @Brian
         # self.blocks = nn.ModuleList([
-        #     ResReLABlock(
+        #     ResABlock(
         #         dim=embed_dim, 
+        #         num_heads=h, 
         #         mlp_hidden_dim=mlp_hidden_dim, 
         #         drop=drop_rate, 
-        #         drop_path=dpr[i],
         #         norm_layer=norm_layer)
         #     for i in range(depth)])
+
+        # 2023.0530 Transformer Block with Residual Rectified Linear Attention @Brian
+        self.blocks = nn.ModuleList([
+            ResReLABlock(
+                dim=embed_dim, 
+                mlp_hidden_dim=mlp_hidden_dim, 
+                drop=drop_rate, 
+                drop_path=dpr[i],
+                norm_layer=norm_layer)
+            for i in range(depth)])
 
         self.norm = norm_layer(embed_dim)
 
@@ -674,6 +716,7 @@ class Transformer_Proposed_1(nn.Module):
         return x
 
 
+# @Brian Unfinished
 class Transformer_Proposed_2(nn.Module):
     def __init__(self, num_frame=81, num_joints=17, in_chans=2,
                  num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
@@ -787,6 +830,7 @@ class Transformer_Proposed_2(nn.Module):
         return x
     
 
+# @Brian Unfinished
 class Transformer_Proposed_3(nn.Module):
     """ 
         Reference: 

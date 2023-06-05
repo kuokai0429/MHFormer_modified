@@ -20,14 +20,14 @@ class Model_Paper(nn.Module):
         self.norm_3 = nn.LayerNorm(args.frames)
 
         ## MHG [B(JC)F] @Paper
-        self.Transformer_encoder_1 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        self.Transformer_encoder_2 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        self.Transformer_encoder_3 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        # self.Transformer_encoder_1 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        # self.Transformer_encoder_2 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        # self.Transformer_encoder_3 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
 
         ## MHG [B(JC)F] RealFormer using ReLA @Propopsed
-        # self.Transformer_encoder_1 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        # self.Transformer_encoder_2 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        # self.Transformer_encoder_3 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        self.Transformer_encoder_1 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        self.Transformer_encoder_2 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        self.Transformer_encoder_3 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
 
         ## Embedding @Paper
         if args.frames > 27:
@@ -407,7 +407,7 @@ class Model_Proposed_2(nn.Module):
 
         return x
 
-# 2023.0601 MHG_DCT[B(JC)F] + SHR[BF(JC)] + CHI[BF(JC)] @Brian
+# 2023.0601 MHG_DCT[B(JC)F] + SHR[BF(JC)] + CHI[BF(JC)] @Brian Unfinished
 class Model_Proposed_3(nn.Module):
     def __init__(self, args):
         super().__init__()
