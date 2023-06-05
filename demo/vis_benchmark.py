@@ -7,15 +7,16 @@ import cv2
 from lib.preprocess import h36m_coco_format, revise_kpts
 from lib.hrnet.gen_kpts import gen_video_kpts as hrnet_pose
 import os 
+import shutil
 import numpy as np
 import torch
 import glob
 from tqdm import tqdm
 import copy
 from IPython import embed
+from scipy.spatial.transform import Rotation as R
 
 sys.path.append(os.getcwd())
-from model.mhformer import Model_Paper, Model_Proposed_1, Model_Proposed_2
 from common.camera import *
 
 import matplotlib
@@ -26,6 +27,7 @@ import matplotlib.gridspec as gridspec
 plt.switch_backend('agg')
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
+
 
 def show2Dpose(kps, img):
     connections = [[0, 1], [1, 2], [2, 3], [0, 4], [4, 5],
@@ -84,26 +86,6 @@ def show3Dpose(vals, ax):
     ax.tick_params('z', labelleft = False)
 
 
-def get_pose2D(video_path, output_dir):
-    cap = cv2.VideoCapture(video_path)
-    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
-    print('\nGenerating 2D pose...')
-    with torch.no_grad():
-        # the first frame of the video should be detected a person
-        keypoints, scores = hrnet_pose(video_path, det_dim=416, num_peroson=1, gen_output=True)
-    keypoints, scores, valid_frames = h36m_coco_format(keypoints, scores)
-    re_kpts = revise_kpts(keypoints, scores, valid_frames)
-    print('Generating 2D pose successfully!')
-
-    output_dir += 'input_2D/'
-    os.makedirs(output_dir, exist_ok=True)
-
-    output_npz = output_dir + 'keypoints.npz'
-    np.savez_compressed(output_npz, reconstruction=keypoints)
-
-
 def img2video(video_path, output_dir):
     cap = cv2.VideoCapture(video_path)
     fps = int(cap.get(cv2.CAP_PROP_FPS)) + 5
@@ -130,185 +112,121 @@ def showimage(ax, img):
     ax.imshow(img)
 
 
-def get_pose3D(video_path, output_dir):
-    args, _ = argparse.ArgumentParser().parse_known_args()
-    args.layers, args.channel, args.d_hid, args.frames = 3, 512, 1024, 351
-    args.pad = (args.frames - 1) // 2
-    args.previous_dir = 'checkpoint/pretrained/351'
-    args.n_joints, args.out_joints = 17, 17
+def get_pose3D(keypoints_3d_pred, keypoints_3d_gt, output_dir):
 
-    ## Reload 
-    model = Model_Paper(args).cuda()
+    if os.path.exists(output_dir) and os.path.isdir(output_dir):
+        shutil.rmtree(output_dir)
 
-    model_dict = model.state_dict()
-    # Put the pretrained model of MHFormer in 'checkpoint/pretrained/351'
-    model_path = sorted(glob.glob(os.path.join(args.previous_dir, '*.pth')))[0]
+    print('\nGenerating Ground Truth 3D pose...')
 
-    pre_dict = torch.load(model_path)
-    for name, key in model_dict.items():
-        model_dict[name] = pre_dict[name]
-    model.load_state_dict(model_dict)
+    for i in tqdm(range(len(keypoints_3d_gt[:]))):
 
-    model.eval()
-
-    ## input
-    keypoints = np.load(output_dir + 'input_2D/keypoints.npz', allow_pickle=True)['reconstruction']
-
-    cap = cv2.VideoCapture(video_path)
-    video_length = 3000 if int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) > 3000 else int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) 
-
-    ## 3D
-    print('\nGenerating 3D pose...')
-    keypoints_3d = []
-    for i in tqdm(range(video_length)):
-        ret, img = cap.read()
-        img_size = img.shape
-
-        ## input frames
-        start = max(0, i - args.pad)
-        end =  min(i + args.pad, len(keypoints[0])-1)
-
-        input_2D_no = keypoints[0][start:end+1]
-        
-        left_pad, right_pad = 0, 0
-        if input_2D_no.shape[0] != args.frames:
-            if i < args.pad:
-                left_pad = args.pad - i
-            if i > len(keypoints[0]) - args.pad - 1:
-                right_pad = i + args.pad - (len(keypoints[0]) - 1)
-
-            input_2D_no = np.pad(input_2D_no, ((left_pad, right_pad), (0, 0), (0, 0)), 'edge')
-        
-        joints_left =  [4, 5, 6, 11, 12, 13]
-        joints_right = [1, 2, 3, 14, 15, 16]
-
-        input_2D = normalize_screen_coordinates(input_2D_no, w=img_size[1], h=img_size[0])  
-
-        input_2D_aug = copy.deepcopy(input_2D)
-        input_2D_aug[ :, :, 0] *= -1
-        input_2D_aug[ :, joints_left + joints_right] = input_2D_aug[ :, joints_right + joints_left]
-        input_2D = np.concatenate((np.expand_dims(input_2D, axis=0), np.expand_dims(input_2D_aug, axis=0)), 0)
-        
-        input_2D = input_2D[np.newaxis, :, :, :, :]
-
-        input_2D = torch.from_numpy(input_2D.astype('float32')).cuda()
-
-        N = input_2D.size(0)
-
-        ## estimation
-        output_3D_non_flip = model(input_2D[:, 0])
-        output_3D_flip     = model(input_2D[:, 1])
-
-        output_3D_flip[:, :, :, 0] *= -1
-        output_3D_flip[:, :, joints_left + joints_right, :] = output_3D_flip[:, :, joints_right + joints_left, :] 
-
-        output_3D = (output_3D_non_flip + output_3D_flip) / 2
-
-        output_3D = output_3D[0:, args.pad].unsqueeze(1) 
-        output_3D[:, :, 0, :] = 0
-        post_out = output_3D[0, 0].cpu().detach().numpy()
-
-        rot =  [0.1407056450843811, -0.1500701755285263, -0.755240797996521, 0.6223280429840088]
+        # Rotate vector(s) v about the rotation described by quaternion(s) q (Quaternion-derived rotation matrix): https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+        rot = R.from_quat([0, 0, 0, 1]).as_quat()
         rot = np.array(rot, dtype='float32')
-        post_out = camera_to_world(post_out, R=rot, t=0)
+        post_out = camera_to_world(keypoints_3d_gt[i], R=rot, t=0)
         post_out[:, 2] -= np.min(post_out[:, 2])
-        keypoints_3d.append(post_out)
 
-        input_2D_no = input_2D_no[args.pad]
-
-        ## 2D
-        image = show2Dpose(input_2D_no, copy.deepcopy(img))
-
-        output_dir_2D = output_dir +'pose2D/'
-        os.makedirs(output_dir_2D, exist_ok=True)
-        cv2.imwrite(output_dir_2D + str(('%04d'% i)) + '_2D.png', image)
-
-        ## 3D
         fig = plt.figure( figsize=(9.6, 5.4))
         gs = gridspec.GridSpec(1, 1)
         gs.update(wspace=-0.00, hspace=0.05) 
         ax = plt.subplot(gs[0], projection='3d')
         show3Dpose( post_out, ax)
 
-        output_dir_3D = output_dir +'pose3D/'
+        output_dir_3D = output_dir +'GroundTruth_pose3D/'
         os.makedirs(output_dir_3D, exist_ok=True)
         plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
         plt.close(fig)
 
-    ## Save 3D keypoints
-    keypoints_3d = np.asarray(keypoints_3d)
-    output_npz = output_dir + 'keypoints_3d.npz'
-    np.savez_compressed(output_npz, reconstruction=keypoints_3d)
+    print('\nGenerating Predicted 3D pose...')
+
+    for i in tqdm(range(len(keypoints_3d_pred[:]))):
+        
+        # Rotate vector(s) v about the rotation described by quaternion(s) q (Quaternion-derived rotation matrix): https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+        rot = [0.0, 0.0, 0.0, 0.0]
+        rot = np.array(rot, dtype='float32')
+        post_out = camera_to_world(keypoints_3d_pred[i], R=rot, t=0)
+        post_out[:, 2] -= np.min(post_out[:, 2])
+
+        fig = plt.figure( figsize=(9.6, 5.4))
+        gs = gridspec.GridSpec(1, 1)
+        gs.update(wspace=-0.00, hspace=0.05) 
+        ax = plt.subplot(gs[0], projection='3d')
+        show3Dpose( post_out, ax)
+
+        output_dir_3D = output_dir +'Predicted_pose3D/'
+        os.makedirs(output_dir_3D, exist_ok=True)
+        plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
+        plt.close(fig)
         
     print('Generating 3D pose successfully!')
 
-    model_params = 0
-    for parameter in model.parameters():
-        model_params += parameter.numel()
-    print('INFO: Trainable parameter count:', model_params/1000000, 'Million')
+    print('\nGenerating Benchmark visualizations...')
 
-    ## all
-    image_dir = 'results/' 
-    image_2d_dir = sorted(glob.glob(os.path.join(output_dir_2D, '*.png')))
-    image_3d_dir = sorted(glob.glob(os.path.join(output_dir_3D, '*.png')))
+    # image_dir = 'results/' 
+    # image_2d_dir = sorted(glob.glob(os.path.join(output_dir_2D, '*.png')))
+    # image_3d_dir = sorted(glob.glob(os.path.join(output_dir_3D, '*.png')))
 
-    print('\nGenerating demo...')
-    for i in tqdm(range(len(image_2d_dir))):
-        image_2d = plt.imread(image_2d_dir[i])
-        image_3d = plt.imread(image_3d_dir[i])
+    # for i in tqdm(range(len(image_2d_dir))):
+    #     image_2d = plt.imread(image_2d_dir[i])
+    #     image_3d = plt.imread(image_3d_dir[i])
 
-        ## crop
-        edge = (image_2d.shape[1] - image_2d.shape[0]) // 2
-        image_2d = image_2d[:, edge:image_2d.shape[1] - edge]
+    #     ## crop
+    #     edge = (image_2d.shape[1] - image_2d.shape[0]) // 2
+    #     image_2d = image_2d[:, edge:image_2d.shape[1] - edge]
 
-        edge = 130
-        image_3d = image_3d[edge:image_3d.shape[0] - edge, edge:image_3d.shape[1] - edge]
+    #     edge = 130
+    #     image_3d = image_3d[edge:image_3d.shape[0] - edge, edge:image_3d.shape[1] - edge]
 
-        ## show
-        font_size = 12
-        fig = plt.figure(figsize=(9.6, 5.4))
-        ax = plt.subplot(121)
-        showimage(ax, image_2d)
-        ax.set_title("Input", fontsize = font_size)
+    #     ## show
+    #     font_size = 12
+    #     fig = plt.figure(figsize=(9.6, 5.4))
+    #     ax = plt.subplot(121)
+    #     showimage(ax, image_2d)
+    #     ax.set_title("Input", fontsize = font_size)
 
-        ax = plt.subplot(122)
-        showimage(ax, image_3d)
-        ax.set_title("Reconstruction", fontsize = font_size)
+    #     ax = plt.subplot(122)
+    #     showimage(ax, image_3d)
+    #     ax.set_title("Ground Truth", fontsize = font_size)
 
-        ## save
-        output_dir_pose = output_dir +'pose/'
-        os.makedirs(output_dir_pose, exist_ok=True)
-        plt.savefig(output_dir_pose + str(('%04d'% i)) + '_pose.png', dpi=200, bbox_inches = 'tight')
-        plt.close(fig)
+    #     ## save
+    #     output_dir_pose = output_dir +'pose/'
+    #     os.makedirs(output_dir_pose, exist_ok=True)
+    #     plt.savefig(output_dir_pose + str(('%04d'% i)) + '_pose.png', dpi=200, bbox_inches = 'tight')
+    #     plt.close(fig)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--video', type=str, default='sample_video.mp4', help='input video')
     parser.add_argument('--subject', type=str, default='S11', help='Human3.6M Subject.')
-    parser.add_argument('--action', type=str, default='Walking', help='Human3.6M Subject Action.')
+    parser.add_argument('--action', type=str, default='Walking', help='Human3.6M Action.')
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = 0
+    os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
-    video_path = f'./demo/video/{args.video}'
+    video_name = f"{args.subject}_{args.action}"
     output_dir = f'./demo/output_benchmark/{args.subject}_{args.action}/'
-
-    print(video_path)
     print(output_dir)
 
+    # Ground Truth
     data = np.load('dataset/data_3d_h36m.npz', allow_pickle=True)
-    data_subject_action = dict(enumerate(data['positions_3d'].flatten()))[0]['S11']['Walking']
-
     # print(data.files, dict(enumerate(data['positions_3d'].flatten()))[0].keys(), dict(enumerate(data['positions_3d'].flatten()))[0]['S11'].keys())
     # print("Walking", len(dict(enumerate(data['positions_3d'].flatten()))[0]['S11']['Walking']))
     # print("Sitting 1", len(dict(enumerate(data['positions_3d'].flatten()))[0]['S11']['Sitting 1']))
     # print("Phoning 2", len(dict(enumerate(data['positions_3d'].flatten()))[0]['S11']['Phoning 2']))
     # print("Greeting 2", len(dict(enumerate(data['positions_3d'].flatten()))[0]['S11']['Greeting 2']))
+    target = dict(enumerate(data['positions_3d'].flatten()))[0][args.subject][args.action]
+    temp = []
+    for j in range(0, len(target), 5):
+        temp.append([target[j][i] for i in range(32) if i not in [4, 5, 9, 10, 11, 16, 20, 21, 22, 23, 24, 28, 29, 30, 31]])
+    target = torch.Tensor(np.asarray(temp))
+    # print(len(target))
 
-    
+    # Predicted (MHFormer) 
+    data = np.load(f'demo/output/{args.subject}_{args.action}/keypoints_3d.npz', allow_pickle=True)
+    predicted = torch.Tensor(data['reconstruction'])
+    # print(len(predicted))
 
-    # get_pose3D(video_path, output_dir)
+    get_pose3D(predicted, target, output_dir)
     # img2video(video_path, output_dir)
-    # print('Generating demo successful!')
-
-
+    print('Generating demo successful!')
+    

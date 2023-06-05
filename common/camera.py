@@ -19,27 +19,27 @@ def camera_to_world(X, R, t):
 def wrap(func, *args, unsqueeze=False):
 	args = list(args)
 	for i, arg in enumerate(args):
-	    if type(arg) == np.ndarray:
-	        args[i] = torch.from_numpy(arg)
-	        if unsqueeze:
-	            args[i] = args[i].unsqueeze(0)
+		if type(arg) == np.ndarray:
+			args[i] = torch.from_numpy(arg)
+			if unsqueeze:
+				args[i] = args[i].unsqueeze(0)
 
 	result = func(*args)
 
 	if isinstance(result, tuple):
-	    result = list(result)
-	    for i, res in enumerate(result):
-	        if type(res) == torch.Tensor:
-	            if unsqueeze:
-	                res = res.squeeze(0)
-	            result[i] = res.numpy()
-	    return tuple(result)
+		result = list(result)
+		for i, res in enumerate(result):
+			if type(res) == torch.Tensor:
+				if unsqueeze:
+					res = res.squeeze(0)
+				result[i] = res.numpy()
+		return tuple(result)
 	elif type(result) == torch.Tensor:
-	    if unsqueeze:
-	        result = result.squeeze(0)
-	    return result.numpy()
+		if unsqueeze:
+			result = result.squeeze(0)
+		return result.numpy()
 	else:
-	    return result
+		return result
 
 def qrot(q, v):
 	assert q.shape[-1] == 4
