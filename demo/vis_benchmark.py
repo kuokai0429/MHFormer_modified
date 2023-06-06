@@ -154,31 +154,31 @@ def get_pose3D(keypoints_3d_gt, keypoints_3d_mhformer, keypoints_3d_poseformer, 
         ax = plt.subplot(gs[0], projection='3d')
         show3Dpose( post_out, ax)
 
-        output_dir_3D = output_dir +'Predicted_pose3D/'
+        output_dir_3D = output_dir +'Predicted_mhformer_pose3D/'
         os.makedirs(output_dir_3D, exist_ok=True)
         plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
         plt.close(fig)
 
     print('\nGenerating PoseFormer Predicted 3D pose...')
 
-    # for i in tqdm(range(len(keypoints_3d_pred[:]))):
+    for i in tqdm(range(len(keypoints_3d_poseformer[:]))):
         
-    #     # Rotate vector(s) v about the rotation described by quaternion(s) q (Quaternion-derived rotation matrix): https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
-    #     rot = [0.0, 0.0, 0.0, 0.0]
-    #     rot = np.array(rot, dtype='float32')
-    #     post_out = camera_to_world(keypoints_3d_pred[i], R=rot, t=0)
-    #     post_out[:, 2] -= np.min(post_out[:, 2])
+        # Rotate vector(s) v about the rotation described by quaternion(s) q (Quaternion-derived rotation matrix): https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+        rot =  [0.1407056450843811, -0.1500701755285263, -0.755240797996521, 0.6223280429840088]
+        rot = np.array(rot, dtype='float32')
+        post_out = camera_to_world(keypoints_3d_poseformer[i], R=rot, t=0)
+        post_out[:, 2] -= np.min(post_out[:, 2])
 
-    #     fig = plt.figure( figsize=(9.6, 5.4))
-    #     gs = gridspec.GridSpec(1, 1)
-    #     gs.update(wspace=-0.00, hspace=0.05) 
-    #     ax = plt.subplot(gs[0], projection='3d')
-    #     show3Dpose( post_out, ax)
+        fig = plt.figure( figsize=(9.6, 5.4))
+        gs = gridspec.GridSpec(1, 1)
+        gs.update(wspace=-0.00, hspace=0.05) 
+        ax = plt.subplot(gs[0], projection='3d')
+        show3Dpose( post_out, ax)
 
-    #     output_dir_3D = output_dir +'Predicted_pose3D/'
-    #     os.makedirs(output_dir_3D, exist_ok=True)
-    #     plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
-    #     plt.close(fig)
+        output_dir_3D = output_dir +'Predicted_poseformer_pose3D/'
+        os.makedirs(output_dir_3D, exist_ok=True)
+        plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
+        plt.close(fig)
         
     print('Generating 3D pose successfully!')
 
@@ -243,13 +243,13 @@ if __name__ == "__main__":
     # print(len(target))
 
     # Predicted (MHFormer) 
-    data = np.load(f'demo/output/{args.subject}_{args.action}/keypoints_3d.npz', allow_pickle=True)
+    data = np.load(f'demo/output/{args.subject}_{args.action}/keypoints_3d_mhformer.npz', allow_pickle=True)
     predicted_mhf = torch.Tensor(data['reconstruction'])
     # print(len(predicted_mhf))
 
     # Predicted (PoseFormer) 
-    data = np.load(f'demo/output/{args.subject}_{args.action}/keypoints_3d.npz', allow_pickle=True)
-    predicted_pf = torch.Tensor(data['reconstruction'])
+    data = np.load(f'demo/output/{args.subject}_{args.action}/keypoints_3d_poseformer.npy', allow_pickle=True)
+    predicted_pf = torch.Tensor(data)
     # print(len(predicted_pf))
 
     get_pose3D(target, predicted_mhf, predicted_pf, output_dir)

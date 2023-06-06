@@ -236,7 +236,7 @@ def get_pose3D(video_path, output_dir):
 
     ## Save 3D keypoints
     keypoints_3d = np.asarray(keypoints_3d)
-    output_npz = output_dir + 'keypoints_3d.npz'
+    output_npz = output_dir + 'keypoints_3d_mhformer.npz'
     np.savez_compressed(output_npz, reconstruction=keypoints_3d)
         
     print('Generating 3D pose successfully!')
