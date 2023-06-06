@@ -11,3 +11,26 @@
 2023/06/06 15:27:52 epoch: 11, lr: 0.0001659, loss: 0.0339, p1: 45.91, p2: 36.18
 2023/06/06 16:01:41 epoch: 12, lr: 0.0001576, loss: 0.0337, p1: 45.48, p2: 36.01
 2023/06/06 16:36:22 epoch: 13, lr: 0.0001497, loss: 0.0336, p1: 45.25, p2: 35.83
+2023/06/06 17:10:11 epoch: 14, lr: 0.0001422, loss: 0.0334, p1: 45.65, p2: 36.12
+INFO: Testing on 543488 frames
+INFO: Trainable parameter count: 21.516501 Million
+checkpoint/0606_0915_36_81/model_6_4460.pth
+100%|████████████████████████████████████████████████████████████████████| 2123/2123 [03:08<00:00, 11.25it/s]
+===Action=== ==p#1 mm== =p#2 mm=
+Directions    41.07      32.22
+Discussion    44.71      35.55
+Eating        40.80      33.24
+Greeting      42.73      35.22
+Phoning       46.44      36.15
+Photo         53.48      41.10
+Posing        41.35      32.49
+Purchases     42.22      33.09
+Sitting       55.07      44.05
+SittingDown   63.53      51.23
+Smoking       45.17      36.99
+Waiting       42.74      33.32
+WalkDog       46.88      36.62
+Walking       30.88      24.84
+WalkTogether  32.06      26.42
+Average       44.61      35.50
+p1: 44.61, p2: 35.50
