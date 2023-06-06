@@ -20,14 +20,14 @@ class Model_Paper(nn.Module):
         self.norm_3 = nn.LayerNorm(args.frames)
 
         ## MHG [B(JC)F] @Paper
-        # self.Transformer_encoder_1 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        # self.Transformer_encoder_2 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        # self.Transformer_encoder_3 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        self.Transformer_encoder_1 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        self.Transformer_encoder_2 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        self.Transformer_encoder_3 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
 
         ## MHG [B(JC)F] RealFormer using ReLA @Propopsed
-        self.Transformer_encoder_1 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        self.Transformer_encoder_2 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        self.Transformer_encoder_3 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        # self.Transformer_encoder_1 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        # self.Transformer_encoder_2 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        # self.Transformer_encoder_3 = Transformer_encoder_Proposed_1(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
 
         ## Embedding @Paper
         if args.frames > 27:
