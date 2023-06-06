@@ -93,33 +93,6 @@ def tce_cal(predicted, w):
 
 
 # 2023.0603 @Brian
-def sp_cal(dataset,keypoints,pred_out):
-    """
-    Get penalty for the symmetry of human body.
-    """
-    loss_sym = 0
-
-    if dataset == 'h36m':
-
-        if keypoints.startswith('hr'):
-            left_bone = [(0,4),(4,5),(5,6),(8,10),(10,11),(11,12)]
-            right_bone = [(0,1),(1,2),(2,3),(8,13),(13,14),(14,15)]
-        else:
-            left_bone = [(0,4),(4,5),(5,6),(8,11),(11,12),(12,13)]
-            right_bone = [(0,1),(1,2),(2,3),(8,14),(14,15),(15,16)]
-
-        for (i_left,j_left),(i_right,j_right) in zip(left_bone,right_bone):
-            left_part = pred_out[:,:,i_left]-pred_out[:,:,j_left]
-            right_part = pred_out[:, :, i_right] - pred_out[:, :, j_right]
-            loss_sym += torch.mean(torch.abs(torch.norm(left_part, dim=-1) - torch.norm(right_part, dim=-1)))
-
-    elif dataset.startswith('STB'):
-        loss_sym = 0
-
-    return 0.01 * loss_sym
-
-
-# 2023.0603 @Brian
 def get_angles(x):
     '''
     Input: (N, T, 17, 3)
@@ -167,6 +140,33 @@ def ae_cal(x, gt):
     limb_angles_gt = get_angles(gt)
 
     return nn.L1Loss()(limb_angles_x, limb_angles_gt)
+
+
+# 2023.0603 @Brian
+def sp_cal(dataset,keypoints,pred_out):
+    """
+    Get penalty for the symmetry of human body.
+    """
+    loss_sym = 0
+
+    if dataset == 'h36m':
+
+        if keypoints.startswith('hr'):
+            left_bone = [(0,4),(4,5),(5,6),(8,10),(10,11),(11,12)]
+            right_bone = [(0,1),(1,2),(2,3),(8,13),(13,14),(14,15)]
+        else:
+            left_bone = [(0,4),(4,5),(5,6),(8,11),(11,12),(12,13)]
+            right_bone = [(0,1),(1,2),(2,3),(8,14),(14,15),(15,16)]
+
+        for (i_left,j_left),(i_right,j_right) in zip(left_bone,right_bone):
+            left_part = pred_out[:,:,i_left]-pred_out[:,:,j_left]
+            right_part = pred_out[:, :, i_right] - pred_out[:, :, j_right]
+            loss_sym += torch.mean(torch.abs(torch.norm(left_part, dim=-1) - torch.norm(right_part, dim=-1)))
+
+    elif dataset.startswith('STB'):
+        loss_sym = 0
+
+    return 0.01 * loss_sym
 
 
 def test_calculation(predicted, target, action, error_sum, data_type, subject):
