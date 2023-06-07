@@ -12,7 +12,7 @@ from functools import partial
 from timm.models.layers import DropPath, LayerNorm2d, to_2tuple
 
 
-# @Brian
+# StarReLU for MetaFormer @Brian
 class StarReLU(nn.Module):
     """
     StarReLU: s * relu(x) ** 2 + b
@@ -37,7 +37,7 @@ class StarReLU(nn.Module):
         return self.scale * self.relu(x) ** 2 + self.bias
 
 
-# @Brian
+# Scale for MetaFormer @Brian
 class Scale(nn.Module):
     """
     Scale vector by element multiplications.
@@ -52,7 +52,7 @@ class Scale(nn.Module):
         return x * self.scale.view(self.shape)
 
 
-# @Brian
+# Affine for ResMLP @Brian
 class Affine(nn.Module):
     def __init__(self, dim):
         super().__init__()
@@ -63,16 +63,16 @@ class Affine(nn.Module):
         return torch.addcmul(self.beta, self.alpha, x)
 
 
-# @Brian
+# Root Mean Square Layer Normalization for ReLA @Brian
 class RMSNorm(nn.Module):
     def __init__(self, d, p=-1., eps=1e-8, bias=False):
         """
             Root Mean Square Layer Normalization
-        :param d: model size
-        :param p: partial RMSNorm, valid value [0, 1], default -1.0 (disabled)
-        :param eps:  epsilon value, default 1e-8
-        :param bias: whether use bias term for RMSNorm, disabled by
-            default because RMSNorm doesn't enforce re-centering invariance.
+            :param d: model size
+            :param p: partial RMSNorm, valid value [0, 1], default -1.0 (disabled)
+            :param eps:  epsilon value, default 1e-8
+            :param bias: whether use bias term for RMSNorm, disabled by
+                default because RMSNorm doesn't enforce re-centering invariance.
         """
         super(RMSNorm, self).__init__()
 
@@ -111,7 +111,7 @@ class RMSNorm(nn.Module):
         return self.scale * x_normed
 
 
-# @Brian
+# PreNorm Normalization @Brian
 class PreNorm(nn.Module):
     def __init__(self, dim, fn):
         super().__init__()
@@ -122,7 +122,7 @@ class PreNorm(nn.Module):
         return self.fn(self.norm(x), **kwargs)
 
 
-# @Paper
+# MLP @Paper
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -142,7 +142,7 @@ class Mlp(nn.Module):
         return x
 
 
-# @Brian
+# FreqMLP for PoseFormerV2 @Brian
 class FreqMlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -165,7 +165,7 @@ class FreqMlp(nn.Module):
         return x
 
 
-# @Brian
+# Pooling for MetaFormer @Brian
 class Pooling(nn.Module):
     """
     Implementation of pooling for PoolFormer: https://arxiv.org/abs/2111.11418
@@ -181,7 +181,7 @@ class Pooling(nn.Module):
         return y - x
 
 
-# @Paper
+# Attention @Paper
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
         super().__init__()
@@ -211,7 +211,7 @@ class Attention(nn.Module):
         return x
 
 
-# @Brian
+# Rectified Linear Attention @Brian
 class RectifiedLinearAttention(nn.Module):
     """ Rectified Linear Attention
     This repo contain pytorch implementation of 'Sparse Attention with Linear Units'.
@@ -247,7 +247,7 @@ class RectifiedLinearAttention(nn.Module):
         return out
 
 
-# @Brian
+# ResidualAttention @Brian
 class ResidualAttention(nn.Module):
     def __init__(self, d_model, num_heads, dropout):
         d_head, remainder = divmod(d_model, num_heads)
@@ -287,7 +287,7 @@ class ResidualAttention(nn.Module):
         return out, energy
 
 
-# @Brian
+# Residual Attention + Rectified Linear Attention @Brian
 class ResidualRectifiedLinearAttention(nn.Module):
     """ Residual Attention + Rectified Linear Attention.
     """
@@ -326,7 +326,7 @@ class ResidualRectifiedLinearAttention(nn.Module):
         return out, energy
 
 
-# @Paper
+# Transformer Block @Paper
 class Block(nn.Module):
     """ 
     Transformer Block with Attention.
@@ -347,7 +347,7 @@ class Block(nn.Module):
         return x
 
 
-# @Brian
+# Rectified Linear Attention Transformer Block @Brian
 class ReLABlock(nn.Module):
     """ 
     Transformer Block with Rectified Linear Attention.
@@ -367,7 +367,7 @@ class ReLABlock(nn.Module):
         return x
 
 
-# @Brian
+# Residual Attention Transformer Block @Brian
 class ResABlock(nn.Module):
     """ 
     Transformer Block with Residual Attention.
@@ -390,7 +390,7 @@ class ResABlock(nn.Module):
         return out, prev
 
 
-# @Brian
+# Residual Rectified Linear Attention Transformer Block @Brian
 class ResReLABlock(nn.Module):
     """ 
     Transformer Block with Residual Rectified Linear Attention.
@@ -419,7 +419,7 @@ class ResReLABlock(nn.Module):
         return out, prev
 
 
-# @Brian
+# MLP-Mixer Block @Brian
 class MLPMixerBlock(nn.Module):
     """ Residual Block w/ token mixing and channel MLPs
     Based on: 'MLP-Mixer: An all-MLP Architecture for Vision' - https://arxiv.org/abs/2105.01601
@@ -451,7 +451,7 @@ class MLPMixerBlock(nn.Module):
         return x
 
 
-# @Brian
+# ResMLP Block @Brian
 class ResMLPBlock(nn.Module):
     """ Residual MLP block w/ LayerScale and Affine 'norm'
 
@@ -485,10 +485,10 @@ class ResMLPBlock(nn.Module):
         return x
 
 
-# @Brian
+# PoolFormer Block @Brian
 class MetaFormerBlock(nn.Module):
     """
-    Implementation of one MetaFormer block.
+    Implementation of one MetaFormer block with Pooling token mixer.
     """
 
     def __init__(
@@ -545,7 +545,7 @@ class MetaFormerBlock(nn.Module):
         return x
 
 
-# @Brian    
+# 2023.0607 MixedBlock from PoseFormerV2 @Brian    
 class PoseFormerV2_MixedBlock(nn.Module):
 
     def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
@@ -570,7 +570,7 @@ class PoseFormerV2_MixedBlock(nn.Module):
         return torch.cat((x1, x2), dim=1)
 
 
-# @Brian
+# Transformer @Paper
 class Transformer_Paper(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
@@ -665,7 +665,7 @@ class Transformer_Paper(nn.Module):
         return x
 
 
-# @Brian
+# RealFormer (Residual Attention) @Brian
 class Transformer_Proposed_1(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
@@ -716,7 +716,7 @@ class Transformer_Proposed_1(nn.Module):
         return x
 
 
-# @Brian Unfinished
+# 2023.0607 PoseFormerV2 @Brian
 class Transformer_Proposed_2(nn.Module):
     def __init__(self, num_frame=81, num_joints=17, in_chans=2,
                  num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
@@ -830,7 +830,7 @@ class Transformer_Proposed_2(nn.Module):
         return x
     
 
-# @Brian Unfinished
+# DSTformer @Brian Unfinished
 class Transformer_Proposed_3(nn.Module):
     """ 
         Reference: 

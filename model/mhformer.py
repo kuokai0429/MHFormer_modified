@@ -5,6 +5,7 @@ import torch.nn as nn
 from einops import rearrange
 from model.module.trans import Transformer_Paper as Transformer_encoder_Paper
 from model.module.trans import Transformer_Proposed_1 as Transformer_encoder_Proposed_1
+from model.module.trans import Transformer_Proposed_2 as Transformer_encoder_Proposed_2
 from model.module.trans_hypothesis import Transformer_Paper as Transformer_hypothesis_Paper
 from model.module.trans_hypothesis import Transformer_Proposed_1 as Transformer_hypothesis_Proposed_1
 
@@ -407,7 +408,7 @@ class Model_Proposed_2(nn.Module):
 
         return x
 
-# 2023.0601 MHG_DCT[B(JC)F] + SHR[BF(JC)] + CHI[BF(JC)] @Brian Unfinished
+# 2023.0601 MHG_DCT[(BF)JC] + SHR[BF(JC)] + CHI[BF(JC)] @Brian Unfinished
 class Model_Proposed_3(nn.Module):
     def __init__(self, args):
         super().__init__()
@@ -417,10 +418,13 @@ class Model_Proposed_3(nn.Module):
         self.norm_2 = nn.LayerNorm(args.frames)
         self.norm_3 = nn.LayerNorm(args.frames)
 
-        ## MHG [B(JC)F] @Paper
-        self.Transformer_encoder_1 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        self.Transformer_encoder_2 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
-        self.Transformer_encoder_3 = Transformer_encoder_Paper(4, args.frames, args.frames*2, length=2*args.n_joints, h=9)
+        ## MHG_DCT[(BF)JC] @Brian
+        self.Transformer_encoder_1 = Transformer_encoder_Proposed_2(num_frame=args.frames, num_joints=17, in_chans=2,
+                                                                    num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None, drop_path_rate=0.1, args=args)
+        self.Transformer_encoder_2 = Transformer_encoder_Proposed_2(num_frame=args.frames, num_joints=17, in_chans=2,
+                                                                    num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None, drop_path_rate=0.1, args=args)
+        self.Transformer_encoder_3 = Transformer_encoder_Proposed_2(num_frame=args.frames, num_joints=17, in_chans=2,
+                                                                    num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None, drop_path_rate=0.1, args=args)
 
         ## Embedding @Paper
         if args.frames > 27:
@@ -458,17 +462,10 @@ class Model_Proposed_3(nn.Module):
             nn.Conv1d(args.channel*3, 3*args.out_joints, kernel_size=1)
         )
 
-    # 2023.0601 MHG_DCT[B(JC)F] + SHR[BF(JC)] + CHI[BF(JC)] @Brian
+    # 2023.0601 MHG_DCT[(BF)JC] + SHR[BF(JC)] + CHI[BF(JC)] @Brian
     def forward(self, x):
         '''
-            0 torch.Size([256, 81, 17, 2])
-            1 torch.Size([256, 34, 81])
-            2 torch.Size([256, 34, 81])
-            3 torch.Size([256, 81, 512])
-            4 torch.Size([256, 81, 1536])
-            5 torch.Size([256, 1536, 81])
-            6 torch.Size([256, 51, 81])
-            7 torch.Size([256, 81, 17, 3])
+            
         '''
 
         B, F, J, C = x.shape

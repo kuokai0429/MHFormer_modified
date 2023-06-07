@@ -12,7 +12,7 @@ from common.opt import opts
 from common.utils import *
 from common.load_data_hm36 import Fusion
 from common.h36m_dataset import Human36mDataset
-from model.mhformer import Model_Paper, Model_Proposed_1, Model_Proposed_2
+from model.mhformer import Model_Paper, Model_Proposed_1, Model_Proposed_2, Model_Proposed_3
 
 opt = opts().parse()
 os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu
@@ -61,7 +61,7 @@ def step(split, opt, actions, dataLoader, model, optimizer=None, epoch=None):
             # mpjve_loss = mpjve_cal(output_3D, out_target, axis=1)
 
             ## NMPJPE Loss @Brian
-            nmpjpe_loss = normalized_mpjpe_cal(output_3D, out_target)
+            # nmpjpe_loss = normalized_mpjpe_cal(output_3D, out_target)
 
             ## Temporal Consistency Loss @Brian
             # joint_weights = torch.tensor([1, 1, 2.5, 2.5, 1, 2.5, 2.5, 1, 1, 1, 1.5, 1.5, 4, 4, 1.5, 4, 4]).cuda()
@@ -76,10 +76,10 @@ def step(split, opt, actions, dataLoader, model, optimizer=None, epoch=None):
             ####################################
 
             ## Total Loss Function @Paper
-            # loss = mpjpe_loss
+            loss = mpjpe_loss
             
             ## Total Loss function @Brian
-            loss = mpjpe_loss + 0.5 * nmpjpe_loss
+            # loss = mpjpe_loss + 0.5 * nmpjpe_loss
 
             ####################################
 
@@ -145,9 +145,10 @@ if __name__ == '__main__':
     test_dataloader = torch.utils.data.DataLoader(test_data, batch_size=opt.batch_size,
                                                   shuffle=False, num_workers=int(opt.workers), pin_memory=True)
 
-    model = Model_Paper(opt).cuda()
+    # model = Model_Paper(opt).cuda()
     # model = Model_Proposed_1(opt).cuda()
     # model = Model_Proposed_2(opt).cuda()
+    model = Model_Proposed_3(opt).cuda()
 
     model_params = 0
     for parameter in model.parameters():

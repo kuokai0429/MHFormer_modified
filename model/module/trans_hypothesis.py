@@ -7,16 +7,17 @@ from einops import rearrange
 from functools import partial
 from timm.models.layers import DropPath, to_2tuple
 
-# @Brian
+
+# RMSNorm for ReLA @Brian
 class RMSNorm(nn.Module):
     def __init__(self, d, p=-1., eps=1e-8, bias=False):
         """
             Root Mean Square Layer Normalization
-        :param d: model size
-        :param p: partial RMSNorm, valid value [0, 1], default -1.0 (disabled)
-        :param eps:  epsilon value, default 1e-8
-        :param bias: whether use bias term for RMSNorm, disabled by
-            default because RMSNorm doesn't enforce re-centering invariance.
+            :param d: model size
+            :param p: partial RMSNorm, valid value [0, 1], default -1.0 (disabled)
+            :param eps:  epsilon value, default 1e-8
+            :param bias: whether use bias term for RMSNorm, disabled by
+                default because RMSNorm doesn't enforce re-centering invariance.
         """
         super(RMSNorm, self).__init__()
 
@@ -54,6 +55,8 @@ class RMSNorm(nn.Module):
 
         return self.scale * x_normed
 
+
+# MLP @Paper
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -72,6 +75,8 @@ class Mlp(nn.Module):
         x = self.drop(x)
         return x
 
+
+# Attention @Paper
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
         super().__init__()
@@ -99,7 +104,8 @@ class Attention(nn.Module):
         x = self.proj_drop(x)
         return x
 
-# @Brian    
+
+# ReLA @Brian    
 class RectifiedLinearAttention(nn.Module):
     """ Rectified Linear Attention
     This repo contain pytorch implementation of 'Sparse Attention with Linear Units'.
@@ -134,6 +140,8 @@ class RectifiedLinearAttention(nn.Module):
         out =  self.to_out(self.norm(out))
         return out
 
+
+# Cross Attention @Paper
 class Cross_Attention(nn.Module):
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
         super().__init__()
@@ -164,6 +172,8 @@ class Cross_Attention(nn.Module):
         x = self.proj_drop(x)
         return x
 
+
+# SHR Block with Attention @Paper
 class SHR_Block(nn.Module):
     def __init__(self, dim, num_heads, mlp_hidden_dim, qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
@@ -198,7 +208,8 @@ class SHR_Block(nn.Module):
 
         return  x_1, x_2, x_3
 
-# @Brian    
+
+# SHR Block with ReLA @Brian    
 class SHR_ReLABlock(nn.Module):
     def __init__(self, dim, mlp_hidden_dim, drop=0., drop_path=0., act_layer=nn.GELU, 
                  norm_layer=nn.LayerNorm):
@@ -230,7 +241,8 @@ class SHR_ReLABlock(nn.Module):
 
         return  x_1, x_2, x_3
 
-# @Brian    
+
+# SHR Block with MLP-Mixer @Brian    
 class SHR_MLPMixerBlock(nn.Module):
     def __init__(self,
             dim,
@@ -273,6 +285,8 @@ class SHR_MLPMixerBlock(nn.Module):
 
         return  x_1, x_2, x_3
 
+
+# CHI Block with Cross-Attention @Paper
 class CHI_Block(nn.Module):
     def __init__(self, dim, num_heads, mlp_hidden_dim, qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
                  drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
@@ -315,6 +329,8 @@ class CHI_Block(nn.Module):
 
         return  x_1, x_2, x_3
 
+
+# Transformer with SHR + CHI @Paper
 class Transformer_Paper(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
@@ -393,7 +409,7 @@ class Transformer_Paper(nn.Module):
 
         return x
 
-# @Brian    
+# Transformer SHR @Brian    
 class Transformer_Proposed_1(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
