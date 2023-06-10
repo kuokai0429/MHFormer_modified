@@ -1,10 +1,11 @@
 # 2023.0513 @Brian
 
 import math
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch_dct as dct
+from scipy.fftpack import dct, idct
 from torch import einsum
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
@@ -155,13 +156,15 @@ class FreqMlp(nn.Module):
 
     def forward(self, x):
         b, f, _ = x.shape
-        x = dct.dct(x.permute(0, 2, 1)).permute(0, 2, 1).contiguous()
+        x = torch.Tensor(dct(x.permute(0, 2, 1).detach().cpu().numpy())).cuda()
+        x = x.permute(0, 2, 1).contiguous()
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop(x)
         x = self.fc2(x)
         x = self.drop(x)
-        x = dct.idct(x.permute(0, 2, 1)).permute(0, 2, 1).contiguous()
+        x = torch.Tensor(idct(x.permute(0, 2, 1).detach().cpu().numpy())).cuda()
+        x = x.permute(0, 2, 1).contiguous()
         return x
 
 
@@ -665,7 +668,7 @@ class Transformer_Paper(nn.Module):
         return x
 
 
-# RealFormer (Residual Attention) @Brian
+# RealFormer @Brian
 class Transformer_Proposed_1(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, h=8, drop_rate=0.1, length=27):
         super().__init__()
@@ -716,7 +719,7 @@ class Transformer_Proposed_1(nn.Module):
         return x
 
 
-# 2023.0607 PoseFormerV2 @Brian
+# 2023.0607 PoseFormerV2 revised @Brian
 class Transformer_Proposed_2(nn.Module):
     def __init__(self, num_frame=81, num_joints=17, in_chans=2,
                  num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
@@ -748,6 +751,7 @@ class Transformer_Proposed_2(nn.Module):
         out_dim = num_joints * 3 
         self.num_frame_kept = 27
         self.num_coeff_kept = 27
+        mlp_hidden_dim = int(embed_dim_ratio * mlp_ratio)
 
         ## Spatial patch embedding
         self.Joint_embedding = nn.Linear(in_chans, embed_dim_ratio)
@@ -762,7 +766,7 @@ class Transformer_Proposed_2(nn.Module):
 
         self.Spatial_blocks = nn.ModuleList([
             Block(
-                dim=embed_dim_ratio, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                dim=embed_dim_ratio, num_heads=num_heads, mlp_hidden_dim=mlp_hidden_dim, qkv_bias=qkv_bias, qk_scale=qk_scale,
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
             for i in range(depth)])
 
@@ -777,6 +781,9 @@ class Transformer_Proposed_2(nn.Module):
 
         self.weighted_mean = torch.nn.Conv1d(in_channels=self.num_coeff_kept, out_channels=1, kernel_size=1)
         self.weighted_mean_ = torch.nn.Conv1d(in_channels=self.num_frame_kept, out_channels=1, kernel_size=1)
+
+        self.Patches = torch.nn.Conv1d(in_channels=self.num_coeff_kept, out_channels=num_frame, kernel_size=1)
+        self.Patches_ = torch.nn.Conv1d(in_channels=self.num_frame_kept, out_channels=num_frame, kernel_size=1)
 
         self.head = nn.Sequential(
             nn.LayerNorm(embed_dim*2),
@@ -804,7 +811,7 @@ class Transformer_Proposed_2(nn.Module):
         b, f, p, _ = x.shape
         num_coeff_kept = self.num_coeff_kept
 
-        x = dct.dct(x.permute(0, 2, 3, 1))[:, :, :, :num_coeff_kept]
+        x = torch.Tensor(dct(x.permute(0, 2, 3, 1).detach().cpu().numpy())[:, :, :, :num_coeff_kept]).cuda()
         x = x.permute(0, 3, 1, 2).contiguous().view(b, num_coeff_kept, -1)
         x = self.Freq_embedding(x) 
         
@@ -822,11 +829,16 @@ class Transformer_Proposed_2(nn.Module):
         b, f, p, _ = x.shape
         x_ = x.clone()
 
+        # print(f">> 0 {x.shape}")
         Spatial_feature = self.Spatial_forward_features(x)
         x = self.forward_features(x_, Spatial_feature)
-        x = torch.cat((self.weighted_mean(x[:, :self.num_coeff_kept]), self.weighted_mean_(x[:, self.num_coeff_kept:])), dim=-1)
+        # print(f">> 1 {x.shape}")
+        x = torch.cat((self.Patches(x[:, :self.num_coeff_kept]), self.Patches(x[:, self.num_coeff_kept:])), dim=-1)
+        
+        # print(f">> 2 {x.shape}")
+        x = self.head(x).view(b, f, p, -1)
+        # print(f">> 3 {x.shape}")
 
-        x = self.head(x).view(b, 1, p, -1)
         return x
     
 
