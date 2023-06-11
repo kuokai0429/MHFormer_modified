@@ -14,7 +14,7 @@ import copy
 from IPython import embed
 
 sys.path.append(os.getcwd())
-from model.mhformer import Model_Paper, Model_Proposed_1, Model_Proposed_2, Model_Proposed_3
+from model.mhformer import Model_Paper
 from common.camera import *
 
 import matplotlib
@@ -154,7 +154,13 @@ def get_pose3D(video_path, output_dir):
     keypoints = np.load(output_dir + 'input_2D/keypoints.npz', allow_pickle=True)['reconstruction']
 
     cap = cv2.VideoCapture(video_path)
-    video_length = 3000 if int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) > 3000 else int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) 
+
+    if int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) > 1000:
+        video_length = 1000
+        print("Long input frames detected! 1000 frames were evaluated.")
+        print("Use 'vis_longframes.py' for longer input frames...")  
+    else:
+        int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) 
 
     ## 3D
     print('\nGenerating 3D pose...')

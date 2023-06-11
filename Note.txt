@@ -27,6 +27,7 @@ python run.py -d custom -k myvideos -arc 3,3,3,3,3 -c checkpoint --evaluate pret
 
 1. 模型推論 Run Inference
 python demo/vis.py --video sample_video.mp4
+(python demo/vis_longframes.py --video f1_3m.mp4)
 
 
 2. 模型訓練 Training

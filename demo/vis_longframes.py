@@ -14,7 +14,7 @@ import copy
 from IPython import embed
 
 sys.path.append(os.getcwd())
-from model.mhformer import Model_Paper, Model_Proposed_1, Model_Proposed_2, Model_Proposed_3
+from model.mhformer import Model_Paper
 from common.camera import *
 
 import matplotlib
@@ -103,25 +103,6 @@ def get_pose2D(video_path, output_dir):
     np.savez_compressed(output_npz, reconstruction=keypoints)
 
 
-def img2video(video_path, output_dir):
-    cap = cv2.VideoCapture(video_path)
-    fps = int(cap.get(cv2.CAP_PROP_FPS)) + 5
-
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-
-    names = sorted(glob.glob(os.path.join(output_dir + 'pose/', '*.png')))
-    img = cv2.imread(names[0])
-    size = (img.shape[1], img.shape[0])
-
-    videoWrite = cv2.VideoWriter(output_dir + video_name + '.mp4', fourcc, fps, size) 
-
-    for name in names:
-        img = cv2.imread(name)
-        videoWrite.write(img)
-
-    videoWrite.release()
-
-
 def showimage(ax, img):
     ax.set_xticks([])
     ax.set_yticks([]) 
@@ -130,31 +111,35 @@ def showimage(ax, img):
 
 
 def get_pose3D(video_path, output_dir):
-    args, _ = argparse.ArgumentParser().parse_known_args()
-    args.layers, args.channel, args.d_hid, args.frames = 3, 512, 1024, 351
-    args.pad = (args.frames - 1) // 2
-    args.previous_dir = 'checkpoint/pretrained/351'
-    args.n_joints, args.out_joints = 17, 17
+    args_, _ = argparse.ArgumentParser().parse_known_args()
+    args_.layers, args_.channel, args_.d_hid, args_.frames = 3, 512, 1024, 351
+    args_.pad = (args_.frames - 1) // 2
+    args_.previous_dir = 'checkpoint/pretrained/351'
+    args_.n_joints, args_.out_joints = 17, 17
 
     ## Reload 
-    model = Model_Paper(args).cuda()
+    model = Model_Paper(args_).cuda()
 
     model_dict = model.state_dict()
     # Put the pretrained model of MHFormer in 'checkpoint/pretrained/351'
-    model_path = sorted(glob.glob(os.path.join(args.previous_dir, '*.pth')))[0]
+    model_path = sorted(glob.glob(os.path.join(args_.previous_dir, '*.pth')))[0]
 
     pre_dict = torch.load(model_path)
     for name, key in model_dict.items():
         model_dict[name] = pre_dict[name]
     model.load_state_dict(model_dict)
-
     model.eval()
+
+    model_params = 0
+    for parameter in model.parameters():
+        model_params += parameter.numel()
+    print('INFO: Trainable parameter count:', model_params/1000000, 'Million')
 
     ## input
     keypoints = np.load(output_dir + 'input_2D/keypoints.npz', allow_pickle=True)['reconstruction']
 
     cap = cv2.VideoCapture(video_path)
-    video_length = 3000 if int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) > 3000 else int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) 
+    video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     ## 3D
     print('\nGenerating 3D pose...')
@@ -164,17 +149,17 @@ def get_pose3D(video_path, output_dir):
         img_size = img.shape
 
         ## input frames
-        start = max(0, i - args.pad)
-        end =  min(i + args.pad, len(keypoints[0])-1)
+        start = max(0, i - args_.pad)
+        end =  min(i + args_.pad, len(keypoints[0])-1)
 
         input_2D_no = keypoints[0][start:end+1]
         
         left_pad, right_pad = 0, 0
-        if input_2D_no.shape[0] != args.frames:
-            if i < args.pad:
-                left_pad = args.pad - i
-            if i > len(keypoints[0]) - args.pad - 1:
-                right_pad = i + args.pad - (len(keypoints[0]) - 1)
+        if input_2D_no.shape[0] != args_.frames:
+            if i < args_.pad:
+                left_pad = args_.pad - i
+            if i > len(keypoints[0]) - args_.pad - 1:
+                right_pad = i + args_.pad - (len(keypoints[0]) - 1)
 
             input_2D_no = np.pad(input_2D_no, ((left_pad, right_pad), (0, 0), (0, 0)), 'edge')
         
@@ -203,7 +188,7 @@ def get_pose3D(video_path, output_dir):
 
         output_3D = (output_3D_non_flip + output_3D_flip) / 2
 
-        output_3D = output_3D[0:, args.pad].unsqueeze(1) 
+        output_3D = output_3D[0:, args_.pad].unsqueeze(1) 
         output_3D[:, :, 0, :] = 0
         post_out = output_3D[0, 0].cpu().detach().numpy()
 
@@ -213,14 +198,14 @@ def get_pose3D(video_path, output_dir):
         post_out[:, 2] -= np.min(post_out[:, 2])
         keypoints_3d.append(post_out)
 
-        input_2D_no = input_2D_no[args.pad]
+        input_2D_no = input_2D_no[args_.pad]
 
         ## 2D
         image = show2Dpose(input_2D_no, copy.deepcopy(img))
 
         output_dir_2D = output_dir +'pose2D/'
         os.makedirs(output_dir_2D, exist_ok=True)
-        cv2.imwrite(output_dir_2D + str(('%04d'% i)) + '_2D.png', image)
+        cv2.imwrite(output_dir_2D + str(('%06d'% i)) + '_2D.png', image)
 
         ## 3D
         fig = plt.figure( figsize=(9.6, 5.4))
@@ -231,7 +216,7 @@ def get_pose3D(video_path, output_dir):
 
         output_dir_3D = output_dir +'pose3D/'
         os.makedirs(output_dir_3D, exist_ok=True)
-        plt.savefig(output_dir_3D + str(('%04d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
+        plt.savefig(output_dir_3D + str(('%06d'% i)) + '_3D.png', dpi=200, format='png', bbox_inches = 'tight')
         plt.close(fig)
 
     ## Save 3D keypoints
@@ -241,21 +226,29 @@ def get_pose3D(video_path, output_dir):
         
     print('Generating 3D pose successfully!')
 
-    model_params = 0
-    for parameter in model.parameters():
-        model_params += parameter.numel()
-    print('INFO: Trainable parameter count:', model_params/1000000, 'Million')
 
-    '''
-    ## all
-    image_dir = 'results/' 
+def merge_2D3D_plots(video_path, output_dir, startframe, demo_length):
+
+    print('\nMerging 2D & 3D plots...')
+
+    cap = cv2.VideoCapture(video_path)
+    video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    output_dir_2D = output_dir +'pose2D/'
+    output_dir_3D = output_dir +'pose3D/'
     image_2d_dir = sorted(glob.glob(os.path.join(output_dir_2D, '*.png')))
     image_3d_dir = sorted(glob.glob(os.path.join(output_dir_3D, '*.png')))
 
-    print('\nGenerating demo...')
-    for i in tqdm(range(len(image_2d_dir))):
+    endframe = video_length if (startframe + demo_length) > video_length else (startframe + demo_length)
+
+    print(f"Total Video Length: {video_length}")
+    print(f"{demo_length} frames merged... starting from {startframe} frame.")
+
+    for i in tqdm(range(startframe, endframe)):
+
         image_2d = plt.imread(image_2d_dir[i])
         image_3d = plt.imread(image_3d_dir[i])
+        # print(f"2d: {image_2d_dir[i]}, 3d: {image_3d_dir[i]}")
 
         ## crop
         edge = (image_2d.shape[1] - image_2d.shape[0]) // 2
@@ -281,12 +274,39 @@ def get_pose3D(video_path, output_dir):
         plt.savefig(output_dir_pose + str(('%04d'% i)) + '_pose.png', dpi=200, bbox_inches = 'tight')
         plt.close(fig)
 
-    '''
+    print('\nMerge completed.')
+
+
+def img2video(video_path, output_dir):
+    
+    print('\nGenerating demo...')
+
+    cap = cv2.VideoCapture(video_path)
+    video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS)) + 5
+
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+
+    names = sorted(glob.glob(os.path.join(output_dir + 'pose/', '*.png')))
+    img = cv2.imread(names[0])
+    size = (img.shape[1], img.shape[0])
+
+    videoWrite = cv2.VideoWriter(output_dir + video_name + '.mp4', fourcc, fps, size) 
+
+    for name in names:
+        img = cv2.imread(name)
+        videoWrite.write(img)
+
+    videoWrite.release()
+
+    print('Generating demo successful!')
+    
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--video', type=str, required=True, help='input video')
-    parser.add_argument('--gpu', type=str, default='0', help='input video')
+    parser.add_argument('--video', type=str, required=True, help='Input video')
+    parser.add_argument('--gpu', type=str, default='0', help='GPU')
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -294,12 +314,9 @@ if __name__ == "__main__":
     video_path = './demo/video/' + args.video
     video_name = video_path.split('/')[-1].split('.')[0]
     output_dir = './demo/output/' + video_name + '/'
+    start_frame, demo_length = 0, 1000
 
     get_pose2D(video_path, output_dir)
     get_pose3D(video_path, output_dir)
-
-    # img2video(video_path, output_dir)
-
-    print('Generating demo successful!')
-
-
+    merge_2D3D_plots(video_path, output_dir, start_frame, demo_length)
+    img2video(video_path, output_dir)
