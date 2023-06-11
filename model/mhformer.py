@@ -413,83 +413,17 @@ class Model_Proposed_3(nn.Module):
     def __init__(self, args):
         super().__init__()
 
-        ## Normalization @Paper
-        # self.norm_1 = nn.LayerNorm(2)
-        # self.norm_2 = nn.LayerNorm(2)
-        # self.norm_3 = nn.LayerNorm(2)
-
         ## MHG_DCT[(BF)JC] @Brian
         self.Transformer_encoder_1 = Transformer_encoder_Proposed_2(num_frame=args.frames, num_joints=args.n_joints, in_chans=2,
                                                                     num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None, drop_path_rate=0.1, args=args)
-        # self.Transformer_encoder_2 = Transformer_encoder_Proposed_2(num_frame=args.frames, num_joints=args.n_joints, in_chans=2,
-        #                                                             num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None, drop_path_rate=0.1, args=args)
-        # self.Transformer_encoder_3 = Transformer_encoder_Proposed_2(num_frame=args.frames, num_joints=args.n_joints, in_chans=2,
-        #                                                             num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None, drop_path_rate=0.1, args=args)
-
-        ## Embedding @Paper
-        # if args.frames > 27:
-        #     self.embedding_1 = nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1)
-        #     self.embedding_2 = nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1)
-        #     self.embedding_3 = nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1)
-        # else:
-        #     self.embedding_1 = nn.Sequential(
-        #         nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1),
-        #         nn.BatchNorm1d(args.channel, momentum=0.1),
-        #         nn.ReLU(inplace=True),
-        #         nn.Dropout(0.25)
-        #     )
-
-        #     self.embedding_2 = nn.Sequential(
-        #         nn.Conv1d(2*args.n_joints, args.channel, kernel_size=1),
-        #         nn.BatchNorm1d(args.channel, momentum=0.1),
-        #         nn.ReLU(inplace=True),
-        #         nn.Dropout(0.25)
-        #     )
-
-        #     self.embedding_3 = nn.Sequential(
-        #         nn.Conv1d(2*args.out_joints, args.channel, kernel_size=1),
-        #         nn.BatchNorm1d(args.channel, momentum=0.1),
-        #         nn.ReLU(inplace=True),
-        #         nn.Dropout(0.25)
-        #     )
-
-        ## SHR [BF(JC)] + CHI [BF(JC)] @Paper
-        # self.Transformer_hypothesis = Transformer_hypothesis_Paper(args.layers, args.channel, args.d_hid, length=args.frames)
-        
-        ## Regression @Paper
-        # self.regression = nn.Sequential(
-        #     nn.BatchNorm1d(args.channel*3, momentum=0.1),
-        #     nn.Conv1d(args.channel*3, 3*args.out_joints, kernel_size=1)
-        # )
 
     # 2023.0601 MHG_DCT[(BF)JC] + SHR[BF(JC)] + CHI[BF(JC)] @Brian
     def forward(self, x):
-        '''
-            
-        '''
 
-        # print(f"0 {x.shape}")
         B, F, J, C = x.shape
-
-        ## MHG : (b f) j c 
-        # x_1 = x + self.Transformer_encoder_1(self.norm_1(x))
-        # x_2 = x_1 + self.Transformer_encoder_2(self.norm_2(x_1)) 
-        # x_3 = x_2 + self.Transformer_encoder_3(self.norm_3(x_2))
+        # print(f"0 {x.shape}")
 
         x = self.Transformer_encoder_1(x)
         # print(f"1 {x.shape}")
-
-        # ## Embedding : b (j c) f -> b f (j c) -> b f (j c)
-        # x_1 = self.embedding_1(x_1).permute(0, 2, 1).contiguous() 
-        # x_2 = self.embedding_2(x_2).permute(0, 2, 1).contiguous()
-        # x_3 = self.embedding_3(x_3).permute(0, 2, 1).contiguous()
-
-        # ## SHR (Sequence coherence) & CHI : b f (j c)
-        # x = self.Transformer_hypothesis(x_1, x_2, x_3) 
-
-        # ## Regression : b f (j c) -> b (j c) f -> b f j c
-        # x = x.permute(0, 2, 1).contiguous()
-        # x = self.regression(x)
-        # x = rearrange(x, 'b (j c) f -> b f j c', j=J).contiguous()
 
         return x

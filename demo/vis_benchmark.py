@@ -218,8 +218,8 @@ def get_pose3D(keypoints_3d_gt, keypoints_3d_mhformer, keypoints_3d_poseformer, 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--subject', type=str, default='S11', help='Human3.6M Subject.')
-    parser.add_argument('--action', type=str, default='Walking', help='Human3.6M Action.')
+    parser.add_argument('--subject', type=str, required=True, help='Human3.6M Subject.')
+    parser.add_argument('--action', type=str, required=True, help='Human3.6M Action.')
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = '0'
