@@ -145,8 +145,8 @@ if __name__ == '__main__':
     test_dataloader = torch.utils.data.DataLoader(test_data, batch_size=opt.batch_size,
                                                   shuffle=False, num_workers=int(opt.workers), pin_memory=True)
 
-    # model = Model_Paper(opt).cuda()
-    model = Model_Proposed_1(opt).cuda()
+    model = Model_Paper(opt).cuda()
+    # model = Model_Proposed_1(opt).cuda()
     # model = Model_Proposed_2(opt).cuda()
     # model = Model_Proposed_3(opt).cuda()
 

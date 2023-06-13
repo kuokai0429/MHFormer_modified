@@ -121,17 +121,33 @@ def get_pose3D(keypoints_3d_gt, keypoints_3d_mhformer, keypoints_3d_poseformer, 
 
     for i in tqdm(range(len(keypoints_3d_gt[:]))):
 
-        # Rotate vector(s) v about the rotation described by quaternion(s) q (Quaternion-derived rotation matrix): https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
-        rot = R.from_quat([0, 0, 0, 1]).as_quat()
+        ## Rotate vector(s) v about the rotation described by quaternion(s) q (Quaternion-derived rotation matrix): https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+
+        # Camera rotate z-axis clockwise
+        z_rotate = 180
+        rot = R.from_rotvec(np.array([2 * np.pi/2 + z_rotate/90 * np.pi/2, 0, 0])).as_quat()
         rot = np.array(rot, dtype='float32')
-        post_out = camera_to_world(keypoints_3d_gt[i], R=rot, t=0)
+        post_out = camera_to_world(post_out, R=rot, t=0)
+
+        # Camera rotate y-axis clockwise
+        y_rotate = 0
+        rot = R.from_rotvec(np.array([0, y_rotate/90 * np.pi/2, 0])).as_quat()
+        rot = np.array(rot, dtype='float32')
+        post_out = camera_to_world(post_out, R=rot, t=0)
+
+        # Camera rotate x-axis clockwise
+        x_rotate = 0
+        rot = R.from_rotvec(np.array([0, 0, x_rotate/90 * np.pi/2])).as_quat()
+        rot = np.array(rot, dtype='float32')
+        post_out = camera_to_world(post_out, R=rot, t=0)
+
         post_out[:, 2] -= np.min(post_out[:, 2])
 
         fig = plt.figure( figsize=(9.6, 5.4))
         gs = gridspec.GridSpec(1, 1)
         gs.update(wspace=-0.00, hspace=0.05) 
         ax = plt.subplot(gs[0], projection='3d')
-        show3Dpose( post_out, ax)
+        show3Dpose(post_out, ax)
 
         output_dir_3D = output_dir +'GroundTruth_pose3D/'
         os.makedirs(output_dir_3D, exist_ok=True)
