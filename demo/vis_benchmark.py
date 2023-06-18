@@ -127,7 +127,7 @@ def get_pose3D(keypoints_3d_gt, keypoints_3d_mhformer, keypoints_3d_poseformer, 
         z_rotate = 180
         rot = R.from_rotvec(np.array([2 * np.pi/2 + z_rotate/90 * np.pi/2, 0, 0])).as_quat()
         rot = np.array(rot, dtype='float32')
-        post_out = camera_to_world(post_out, R=rot, t=0)
+        post_out = camera_to_world(keypoints_3d_gt[i], R=rot, t=0)
 
         # Camera rotate y-axis clockwise
         y_rotate = 0
@@ -197,40 +197,7 @@ def get_pose3D(keypoints_3d_gt, keypoints_3d_mhformer, keypoints_3d_poseformer, 
         plt.close(fig)
         
     print('Generating 3D pose successfully!')
-
-    print('\nGenerating Benchmark visualizations...')
-
-    # image_dir = 'results/' 
-    # image_2d_dir = sorted(glob.glob(os.path.join(output_dir_2D, '*.png')))
-    # image_3d_dir = sorted(glob.glob(os.path.join(output_dir_3D, '*.png')))
-
-    # for i in tqdm(range(len(image_2d_dir))):
-    #     image_2d = plt.imread(image_2d_dir[i])
-    #     image_3d = plt.imread(image_3d_dir[i])
-
-    #     ## crop
-    #     edge = (image_2d.shape[1] - image_2d.shape[0]) // 2
-    #     image_2d = image_2d[:, edge:image_2d.shape[1] - edge]
-
-    #     edge = 130
-    #     image_3d = image_3d[edge:image_3d.shape[0] - edge, edge:image_3d.shape[1] - edge]
-
-    #     ## show
-    #     font_size = 12
-    #     fig = plt.figure(figsize=(9.6, 5.4))
-    #     ax = plt.subplot(121)
-    #     showimage(ax, image_2d)
-    #     ax.set_title("Input", fontsize = font_size)
-
-    #     ax = plt.subplot(122)
-    #     showimage(ax, image_3d)
-    #     ax.set_title("Ground Truth", fontsize = font_size)
-
-    #     ## save
-    #     output_dir_pose = output_dir +'pose/'
-    #     os.makedirs(output_dir_pose, exist_ok=True)
-    #     plt.savefig(output_dir_pose + str(('%04d'% i)) + '_pose.png', dpi=200, bbox_inches = 'tight')
-    #     plt.close(fig)
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -269,6 +236,6 @@ if __name__ == "__main__":
     # print(len(predicted_pf))
 
     get_pose3D(target, predicted_mhf, predicted_pf, output_dir)
-    # img2video(video_path, output_dir)
-    print('Generating demo successful!')
+
+    print('Generating successful!')
     
