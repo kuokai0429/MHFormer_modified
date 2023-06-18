@@ -26,6 +26,8 @@
 /home/brian/下載/MHFormer_revised/checkpoint/0612_0426_31_81 : MHFormer with MHG[B(JC)F]+SHR[(BF)JC]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans_hypothesis.py). -> p1: 4812
                                                               (frames=81, Transformer_hypothesis_Proposed_1(args.layers, 32, 32*2, length=17)) 
 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/home/brian/下載/MHFormer_revised/checkpoint/ : PoseFormerV2 revised (main.py, mhformer.py, trans.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG_DCT[(BF)JC]+SHR[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans.py). (frames=81) -> p1:
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer with MHG_DST[B(JC)F]+SHR_DST[BF(JC)]+CHI[BF(JC)]. (main.py, mhformer.py, trans.py). (frames=81) -> p1: 
 /home/brian/下載/MHFormer_revised/checkpoint/ : MHFormer from Paper with [MPJPE Loss + 0.5 * Symmetry Loss] (main.py, utils.py). (frames=81) -> p1:

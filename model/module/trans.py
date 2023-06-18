@@ -840,10 +840,18 @@ class Transformer_Proposed_2(nn.Module):
         # print(f">> 3 {x.shape}")
 
         return x
-    
+
+
+# DCTformer @Brian Unfinished
+class Transformer_Proposed_3(nn.Module):
+    """ 
+        Reference: 
+            DCTformer from PoseFormerV2.
+    """
+
 
 # DSTformer @Brian Unfinished
-class Transformer_Proposed_3(nn.Module):
+class Transformer_Proposed_4(nn.Module):
     """ 
         Reference: 
             DSTformer model from MotionBERT.

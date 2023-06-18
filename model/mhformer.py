@@ -408,16 +408,16 @@ class Model_Proposed_2(nn.Module):
 
         return x
 
-# MHG_DCT[(BF)JC] + SHR[BF(JC)] + CHI[BF(JC)] @Brian Unfinished
+# PoseFormerV2 revised @Brian
 class Model_Proposed_3(nn.Module):
     def __init__(self, args):
         super().__init__()
 
-        ## MHG_DCT[(BF)JC] @Brian
+        ## PoseFormerV2 revised @Brian
         self.Transformer_encoder_1 = Transformer_encoder_Proposed_2(num_frame=args.frames, num_joints=args.n_joints, in_chans=2,
                                                                     num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None, drop_path_rate=0.1, args=args)
 
-    # 2023.0601 MHG_DCT[(BF)JC] + SHR[BF(JC)] + CHI[BF(JC)] @Brian
+    # PoseFormerV2 revised @Brian
     def forward(self, x):
 
         B, F, J, C = x.shape
@@ -427,3 +427,19 @@ class Model_Proposed_3(nn.Module):
         # print(f"1 {x.shape}")
 
         return x
+
+
+# MHG_DCT[(BF)JC] + SHR[BF(JC)] + CHI[BF(JC)] @Brian Unfinished
+class Model_Proposed_4(nn.Module):
+    """ 
+        Reference: 
+            DCTFormer from PoseFormerV2.
+    """
+
+
+# MHG_DST[(BF)JC] + SHR[BF(JC)] + CHI[BF(JC)] @Brian Unfinished
+class Model_Proposed_5(nn.Module):
+    """ 
+        Reference: 
+            DSTformer model from MotionBERT.
+    """
