@@ -263,7 +263,7 @@ def merge_2D3D_plots(video_path, output_dir, startframe, demo_length):
     endframe = video_length if (startframe + demo_length) > video_length else (startframe + demo_length)
 
     print(f"Total Video Length: {video_length}")
-    print(f"{demo_length} frames merged... starting from {startframe} frame.")
+    print(f"{endframe} frames merged... starting from {startframe} frame.")
 
     for i in tqdm(range(startframe, endframe)):
 
