@@ -134,6 +134,7 @@ dmypy.json
 *.pth
 *.png
 f1*.mp4
+*at*.mp4
 *nchu*.mp4
 *nhsg*.mp4
 *.weights
