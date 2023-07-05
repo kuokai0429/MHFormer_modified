@@ -131,6 +131,7 @@ dmypy.json
 *.bin
 *.zip
 *.npz
+*.npy
 *.pth
 *.png
 f1*.mp4
