@@ -197,7 +197,7 @@ def get_pose3D(keypoints_3d_gt, keypoints_3d_mhformer, keypoints_3d_poseformer, 
         plt.close(fig)
         
     print('Generating 3D pose successfully!')
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
     video_name = f"{args.subject}_{args.action}"
-    output_dir = f'./demo/output_benchmark/{args.subject}_{args.action}/'
+    output_dir = f'./demo/output_benchmark/{args.subject}_{args.action.split()[0]}/'
     print(output_dir)
 
     # Ground Truth
@@ -226,12 +226,12 @@ if __name__ == "__main__":
     # print(len(target))
 
     # Predicted (MHFormer) 
-    data = np.load(f'demo/output/{args.subject}_{args.action}/keypoints_3d_mhformer.npz', allow_pickle=True)
+    data = np.load(f'demo/output/{args.subject}_{args.action.split()[0]}/keypoints_3d_mhformer.npz', allow_pickle=True)
     predicted_mhf = torch.Tensor(data['reconstruction'])
     # print(len(predicted_mhf))
 
     # Predicted (PoseFormer) 
-    data = np.load(f'demo/output/{args.subject}_{args.action}/keypoints_3d_poseformer.npy', allow_pickle=True)
+    data = np.load(f'demo/output/{args.subject}_{args.action.split()[0]}/keypoints_3d_poseformer.npy', allow_pickle=True)
     predicted_pf = torch.Tensor(data)
     # print(len(predicted_pf))
 

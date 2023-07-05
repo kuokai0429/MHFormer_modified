@@ -42,6 +42,7 @@ python main.py --test --previous_dir 'checkpoint/0512_1329_17_81' --frames 81
 
 4. 模型結果比對 BenchMark
 python demo/vis_benchmark.py --action Walking --subject S11
+( python demo/vis_benchmark.py --action "Phoning 2" --subject S11 )
 
 
 ##################         其他         ##################
