@@ -1,6 +1,6 @@
 # A modified version of MHFormer
 
-Revised from official implementation of CVPR 2022 paper (**MHFormer**) Multi-Hypothesis Transformer for 3D Human Pose Estimation.
+Modified from official implementation of CVPR 2022 paper (**MHFormer**) Multi-Hypothesis Transformer for 3D Human Pose Estimation.
 
 > **MHFormer** ([Github Link](https://github.com/Vegetebird/MHFormer)) <br>
 [Multi-Hypothesis Transformer for 3D Human Pose Estimation](https://arxiv.org/pdf/2111.12707),            
