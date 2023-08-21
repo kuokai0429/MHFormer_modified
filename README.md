@@ -7,11 +7,6 @@ Modified from official implementation of CVPR 2022 paper (**MHFormer**) Multi-Hy
 > Wenhao Li, Hong Liu, Hao Tang, Pichao Wang, Luc Van Gool,        
 > *In IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2022*
 
-<p align="center"><img src="figure/pipline.jpg" width="100%" alt="" /></p>
-
-| ![skating](figure/skating.gif)  | ![anime](figure/anime.gif) |
-| ------------- | ------------- |
-
 
 ## 環境安裝 (部分套件)
 
