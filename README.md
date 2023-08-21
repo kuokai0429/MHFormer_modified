@@ -37,7 +37,7 @@ To test on a 81-frames pretrained model on Human3.6M:
 
 ```bash
 python main.py --test --previous_dir 'checkpoint/0512_1329_17_81' --frames 81
-(python main.py --test --previous_dir 'checkpoint/pretrained/351' --frames 351)
+( python main.py --test --previous_dir 'checkpoint/pretrained/351' --frames 351 )
 ```
 
 
@@ -47,7 +47,7 @@ To train a 81-frames model on Human3.6M:
 
 ```bash
 python main.py --frames 81 --batch_size 256
-(python main.py --frames 351 --batch_size 128)
+( python main.py --frames 351 --batch_size 128 )
 ```
 
 
@@ -65,6 +65,15 @@ Sample demo output:
 
 <p align="center"><img src="figure/sample_video.gif" width="60%" alt="" /></p>
 
+
+## 模型結果比對 BenchMark
+To generate benchmark results for ground truth, mhformer and poseformer predictions.
+
+Run the command below:
+```bash
+python demo/vis_benchmark.py --action Walking --subject S11 --with_gt
+( python demo/vis_benchmark.py --action "Phoning 2" --subject S11 --with_gt )
+```
 
 ## 其他
 
