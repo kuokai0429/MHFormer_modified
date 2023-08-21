@@ -57,6 +57,8 @@ python main.py --frames 81 --batch_size 256
 ( python main.py --frames 351 --batch_size 128 )
 ```
 
+ Check checkpoint/Training Note.txt for detailed training history.
+
 <br>
 
 ## 模型推論 Run Inference
